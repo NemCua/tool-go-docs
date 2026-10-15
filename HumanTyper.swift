@@ -1,4 +1,5 @@
 import ApplicationServices
+import AppKit
 import Foundation
 
 private var stopRequested = false
@@ -536,18 +537,34 @@ private func replaceAllInGoogleDocs(wrong: String, correct: String) {
     // actual Find and replace dialog.
     postShortcut(code: 4, flags: [.maskCommand, .maskShift])
     pumpEvents(for: config.findReplaceOpenSeconds)
-    postText(wrong)
+    pasteIntoFocusedField(wrong)
     pumpEvents(for: config.findReplaceStepSeconds)
     // The dialog opens with Find focused; one Tab moves to "Replace with".
     postKey(code: 48)
     pumpEvents(for: config.findReplaceStepSeconds)
-    postText(correct)
+    pasteIntoFocusedField(correct)
     pumpEvents(for: config.findReplaceStepSeconds)
     for _ in 0..<5 { postKey(code: 48); pumpEvents(for: config.findReplaceStepSeconds) }
     postKey(code: 36) // Enter: Thay thế tất cả
     pumpEvents(for: config.findReplaceApplySeconds)
     postKey(code: 53) // Escape: close dialog
     pumpEvents(for: config.findReplaceStepSeconds)
+}
+
+private func pasteIntoFocusedField(_ text: String) {
+    // Google Docs' dialog fields occasionally ignore synthetic Unicode key
+    // events. Pasting is reliable there; restore the user's plain-text
+    // clipboard contents immediately afterwards.
+    let board = NSPasteboard.general
+    let previousText = board.string(forType: .string)
+    board.clearContents()
+    board.setString(text, forType: .string)
+    postShortcut(code: 9, flags: .maskCommand) // Command+V
+    pumpEvents(for: 0.2)
+    if let previousText {
+        board.clearContents()
+        board.setString(previousText, forType: .string)
+    }
 }
 
 private func exitGoogleDocsTable() {
