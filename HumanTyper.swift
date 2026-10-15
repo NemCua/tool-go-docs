@@ -622,8 +622,8 @@ let typeString: (String) -> Void = { text in
     if rng.unit() < config.errorRate, let wrong = typo(for: character, rng: &rng) {
         postText(String(wrong))
         pumpEvents(for: rng.between(baseDelay * 0.8, baseDelay * 2.2))
-        postKey(code: 51)
-        pumpEvents(for: rng.between(baseDelay * 0.55, baseDelay * 1.5))
+        // Keep the intentional typo in the document. It is corrected later
+        // through Google Docs search after the version-history pause.
     }
 
     postText(String(character))
