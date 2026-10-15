@@ -513,6 +513,24 @@ private func visitGoogleDocsVersionHistory(viewTime: Double) {
     pumpEvents(for: 0.8)
 }
 
+private func replaceAllInGoogleDocs(wrong: String, correct: String) {
+    guard !wrong.isEmpty, wrong != correct else { return }
+    // Google Docs macOS Find and replace dialog. The tab order is the one
+    // used by the Vietnamese UI: Find -> Replace -> options -> Replace all.
+    postShortcut(code: 3, flags: .maskCommand) // Command+F
+    pumpEvents(for: 0.8)
+    postText(wrong)
+    pumpEvents(for: 0.35)
+    for _ in 0..<4 { postKey(code: 48); pumpEvents(for: 0.08) }
+    postText(correct)
+    pumpEvents(for: 0.25)
+    for _ in 0..<5 { postKey(code: 48); pumpEvents(for: 0.08) }
+    postKey(code: 36) // Enter: Thay thế tất cả
+    pumpEvents(for: 0.6)
+    postKey(code: 53) // Escape: close dialog
+    pumpEvents(for: 0.4)
+}
+
 private func exitGoogleDocsTable() {
     // Official Google Docs shortcut on macOS: hold Control + Command + Shift,
     // then press T followed by E (Exit table).
@@ -608,9 +626,38 @@ var typed = 0
 var typedSinceLongPause = 0
 var nextLongPauseAt = rng.int(config.historyMinCharacters...config.historyMaxCharacters)
 var longPauseCount = 0
+var pendingCorrections: [(wrong: String, correct: String)] = []
+
+func intentionallyMistypeWords(_ text: String, rng: inout RNG,
+                                corrections: inout [(wrong: String, correct: String)]) -> String {
+    var result = ""
+    var word = ""
+    func flushWord() {
+        guard !word.isEmpty else { return }
+        var wrong = word
+        if rng.unit() < config.errorRate {
+            let chars = Array(word)
+            if let index = chars.indices.randomElement(using: &rng), let replacement = typo(for: chars[index], rng: &rng) {
+                var changed = chars
+                changed[index] = replacement
+                wrong = String(changed)
+                corrections.append((wrong: wrong, correct: word))
+            }
+        }
+        result += wrong
+        word = ""
+    }
+    for character in text {
+        if character.isWhitespace { flushWord(); result.append(character) }
+        else { word.append(character) }
+    }
+    flushWord()
+    return result
+}
 
 let typeString: (String) -> Void = { text in
-  for character in text {
+  let textWithTypos = intentionallyMistypeWords(text, rng: &rng, corrections: &pendingCorrections)
+  for character in textWithTypos {
     if stopRequested { return }
 
     if untilBurstChange == 0 {
@@ -618,13 +665,6 @@ let typeString: (String) -> Void = { text in
         untilBurstChange = rng.int(3...12)
     }
     untilBurstChange -= 1
-
-    if rng.unit() < config.errorRate, let wrong = typo(for: character, rng: &rng) {
-        postText(String(wrong))
-        pumpEvents(for: rng.between(baseDelay * 0.8, baseDelay * 2.2))
-        // Keep the intentional typo in the document. It is corrected later
-        // through Google Docs search after the version-history pause.
-    }
 
     postText(String(character))
     typed += 1
@@ -676,6 +716,14 @@ documentLoop: for part in documentParts {
         if !stopRequested {
             exitGoogleDocsTable()
         }
+    }
+}
+
+if !stopRequested && !pendingCorrections.isEmpty {
+    print("\nĐang tìm và sửa \(pendingCorrections.count) cụm viết sai…")
+    for correction in pendingCorrections {
+        if stopRequested { break }
+        replaceAllInGoogleDocs(wrong: correction.wrong, correct: correction.correct)
     }
 }
 
