@@ -21,6 +21,10 @@ struct Config {
     var waitBeforeHistory = 5.0
     var historyViewTime = 5.0
     var waitAfterHistory = 5.0
+    var typoMinCharacters = 80
+    var typoMaxCharacters = 160
+    var typosMinPerHistory = 1
+    var typosMaxPerHistory = 3
     var seed: UInt64?
 }
 
@@ -112,10 +116,16 @@ private func loadSettings(into config: inout Config) {
     if let n = json["waitBeforeHistorySeconds"] as? Double { config.waitBeforeHistory = n }
     if let n = json["historyViewSeconds"] as? Double { config.historyViewTime = n }
     if let n = json["waitAfterHistorySeconds"] as? Double { config.waitAfterHistory = n }
+    if let n = json["typoMinCharacters"] as? Int { config.typoMinCharacters = n }
+    if let n = json["typoMaxCharacters"] as? Int { config.typoMaxCharacters = n }
+    if let n = json["typosMinPerHistory"] as? Int { config.typosMinPerHistory = n }
+    if let n = json["typosMaxPerHistory"] as? Int { config.typosMaxPerHistory = n }
     guard config.wpm >= 5, config.wpm <= 300, config.errorRate >= 0, config.errorRate <= 0.3,
           config.countdown >= 0, config.countdown <= 60, config.historyMinCharacters >= 1,
           config.historyMaxCharacters >= config.historyMinCharacters, config.waitBeforeHistory >= 0,
-          config.historyViewTime >= 0, config.waitAfterHistory >= 0 else {
+          config.historyViewTime >= 0, config.waitAfterHistory >= 0, config.typoMinCharacters >= 1,
+          config.typoMaxCharacters >= config.typoMinCharacters, config.typosMinPerHistory >= 0,
+          config.typosMaxPerHistory >= config.typosMinPerHistory else {
         fail("một hoặc nhiều giá trị trong settings.json nằm ngoài phạm vi hợp lệ")
     }
 }
@@ -627,6 +637,9 @@ var typedSinceLongPause = 0
 var nextLongPauseAt = rng.int(config.historyMinCharacters...config.historyMaxCharacters)
 var longPauseCount = 0
 var pendingCorrections: [(wrong: String, correct: String)] = []
+var charactersSinceTypo = 0
+var typosThisHistoryCycle = 0
+var targetTyposThisHistoryCycle = rng.int(config.typosMinPerHistory...config.typosMaxPerHistory)
 
 func intentionallyMistypeWords(_ text: String, rng: inout RNG,
                                 corrections: inout [(wrong: String, correct: String)]) -> String {
@@ -635,15 +648,18 @@ func intentionallyMistypeWords(_ text: String, rng: inout RNG,
     func flushWord() {
         guard !word.isEmpty else { return }
         var wrong = word
-        if rng.unit() < config.errorRate {
+        if typosThisHistoryCycle < targetTyposThisHistoryCycle && charactersSinceTypo >= rng.int(config.typoMinCharacters...config.typoMaxCharacters) && rng.unit() < config.errorRate {
             let chars = Array(word)
             if let index = chars.indices.randomElement(using: &rng), let replacement = typo(for: chars[index], rng: &rng) {
                 var changed = chars
                 changed[index] = replacement
                 wrong = String(changed)
                 corrections.append((wrong: wrong, correct: word))
+                typosThisHistoryCycle += 1
+                charactersSinceTypo = 0
             }
         }
+        charactersSinceTypo += word.count
         result += wrong
         word = ""
     }
@@ -685,6 +701,9 @@ let typeString: (String) -> Void = { text in
         }
         typedSinceLongPause = 0
         nextLongPauseAt = rng.int(config.historyMinCharacters...config.historyMaxCharacters)
+        typosThisHistoryCycle = 0
+        targetTyposThisHistoryCycle = rng.int(config.typosMinPerHistory...config.typosMaxPerHistory)
+        charactersSinceTypo = 0
     }
   }
 }

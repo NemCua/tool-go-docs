@@ -27,7 +27,7 @@ Nếu không truyền tên, thư mục phải chứa đúng một file `.txt`.
 
 ## Cấu hình
 
-Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ngược, lỗi gõ và chu kỳ lịch sử. Các trường `intentionalTypos` và `historyEnabled` nhận `true` hoặc `false` để bật/tắt tính năng.
+Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ngược, lỗi gõ và chu kỳ lịch sử. `typoMinCharacters`/`typoMaxCharacters` là khoảng ký tự giữa các lỗi; `typosMinPerHistory`/`typosMaxPerHistory` là số cụm sai ngẫu nhiên trước mỗi lần lưu. Khi sửa, chương trình dùng “Thay thế tất cả” nên mọi lần xuất hiện của cùng cụm sai đều được sửa.
 
 ## Kiểm tra mà không gửi phím
 

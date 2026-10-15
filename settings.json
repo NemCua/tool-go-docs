@@ -1,6 +1,6 @@
 {
   "wpm": 120,
-  "countdownSeconds": 10,
+  "countdownSeconds":5,
   "intentionalTypos": true,
   "errorRatePercent": 2.5,
   "historyEnabled": true,
@@ -8,5 +8,9 @@
   "historyMaxCharacters": 300,
   "waitBeforeHistorySeconds": 5,
   "historyViewSeconds": 5,
-  "waitAfterHistorySeconds": 5
+  "waitAfterHistorySeconds": 5,
+  "typoMinCharacters": 80,
+  "typoMaxCharacters": 160,
+  "typosMinPerHistory": 1,
+  "typosMaxPerHistory": 3
 }
