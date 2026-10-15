@@ -538,9 +538,9 @@ private func replaceAllInGoogleDocs(wrong: String, correct: String) {
     pumpEvents(for: config.findReplaceOpenSeconds)
     postText(wrong)
     pumpEvents(for: config.findReplaceStepSeconds)
-    // In the current Google Docs dialog, five Tab presses move from the
-    // focused Find field to the "Replace with" input.
-    for _ in 0..<5 { postKey(code: 48); pumpEvents(for: config.findReplaceStepSeconds) }
+    // The dialog opens with Find focused; one Tab moves to "Replace with".
+    postKey(code: 48)
+    pumpEvents(for: config.findReplaceStepSeconds)
     postText(correct)
     pumpEvents(for: config.findReplaceStepSeconds)
     for _ in 0..<5 { postKey(code: 48); pumpEvents(for: config.findReplaceStepSeconds) }
