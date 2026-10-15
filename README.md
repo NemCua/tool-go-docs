@@ -48,7 +48,6 @@ Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ng�
 | `soTuCumSaiToiThieu` / `soTuCumSaiToiDa` | Số từ trong một cụm sai. |
 | `xacSuatLoiTelex` | Tỷ lệ dùng lỗi Telex thay vì lỗi bàn phím khác. |
 | `xacSuatLuuTruocKhiSua` | Tỷ lệ lưu lịch sử trước khi xóa và gõ lại cụm đúng. |
-| `chiGoVanBan` | Gõ thuần văn bản: không lỗi, không lưu lịch sử, không sửa. |
 | `batNhipTuNhien` | Bật/tắt các nhịp khựng ngẫu nhiên, nghỉ dấu câu và thay đổi nhịp gõ. |
 
 ## Trang chỉnh settings

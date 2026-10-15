@@ -27,7 +27,6 @@ struct Config {
     var typosMaxPerHistory = 3
     var telexTypoProbability = 0.75
     var historyBeforeCorrectionProbability = 0.5
-    var plainTypingOnly = false
     var typoPhraseMinWords = 1
     var typoPhraseMaxWords = 3
     var naturalRhythm = true
@@ -128,15 +127,9 @@ private func loadSettings(into config: inout Config) {
     if let n = json["soLoiMoiDotToiDa"] as? Int { config.typosMaxPerHistory = n }
     if let n = json["xacSuatLoiTelex"] as? Double { config.telexTypoProbability = n }
     if let n = json["xacSuatLuuTruocKhiSua"] as? Double { config.historyBeforeCorrectionProbability = n }
-    if let n = json["chiGoVanBan"] as? Bool { config.plainTypingOnly = n }
     if let n = json["soTuCumSaiToiThieu"] as? Int { config.typoPhraseMinWords = n }
     if let n = json["soTuCumSaiToiDa"] as? Int { config.typoPhraseMaxWords = n }
     if let n = json["batNhipTuNhien"] as? Bool { config.naturalRhythm = n }
-    if config.plainTypingOnly {
-        config.errorRate = 0
-        config.longPauses = false
-        config.visitHistoryDuringPauses = false
-    }
     guard config.wpm >= 5, config.wpm <= 1000, config.errorRate >= 0, config.errorRate <= 0.3,
           config.countdown >= 0, config.countdown <= 60, config.historyMinCharacters >= 1,
           config.historyMaxCharacters >= config.historyMinCharacters, config.waitBeforeHistory >= 0,
@@ -702,18 +695,18 @@ var targetTyposThisHistoryCycle = rng.int(config.typosMinPerHistory...config.typ
 func typeCharacter(_ character: Character) {
     if stopRequested { return }
 
-    if !config.plainTypingOnly && config.naturalRhythm && untilBurstChange == 0 {
+    if config.naturalRhythm && untilBurstChange == 0 {
         burstFactor = rng.between(0.72, 1.32)
         untilBurstChange = rng.int(3...12)
     }
-    if !config.plainTypingOnly && config.naturalRhythm { untilBurstChange -= 1 }
+    if config.naturalRhythm { untilBurstChange -= 1 }
 
     postText(String(character))
     typed += 1
     typedSinceLongPause += 1
     // Plain mode is deliberately constant: no punctuation pauses, bursts, or
     // random breaks—only the delay required by the selected WPM.
-    let delay = config.plainTypingOnly || !config.naturalRhythm
+    let delay = !config.naturalRhythm
         ? baseDelay
         : naturalDelay(after: character, base: baseDelay, burst: burstFactor, rng: &rng)
     pumpEvents(for: delay)
