@@ -547,7 +547,11 @@ private func replaceAllInGoogleDocs(wrong: String, correct: String) {
     for _ in 0..<5 { postKey(code: 48); pumpEvents(for: config.findReplaceStepSeconds) }
     postKey(code: 36) // Enter: Thay thế tất cả
     pumpEvents(for: config.findReplaceApplySeconds)
-    postKey(code: 53) // Escape: close dialog
+    // Escape is unreliable in this Google Docs modal. From the Replace all
+    // button, one Tab reaches the close (X) control; activate it with Enter.
+    postKey(code: 48)
+    pumpEvents(for: config.findReplaceStepSeconds)
+    postKey(code: 36)
     pumpEvents(for: config.findReplaceStepSeconds)
 }
 
