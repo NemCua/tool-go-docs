@@ -25,6 +25,9 @@ struct Config {
     var typoMaxCharacters = 160
     var typosMinPerHistory = 1
     var typosMaxPerHistory = 3
+    var findReplaceOpenSeconds = 1.5
+    var findReplaceStepSeconds = 0.35
+    var findReplaceApplySeconds = 1.5
     var seed: UInt64?
 }
 
@@ -120,12 +123,16 @@ private func loadSettings(into config: inout Config) {
     if let n = json["typoMaxCharacters"] as? Int { config.typoMaxCharacters = n }
     if let n = json["typosMinPerHistory"] as? Int { config.typosMinPerHistory = n }
     if let n = json["typosMaxPerHistory"] as? Int { config.typosMaxPerHistory = n }
+    if let n = json["findReplaceOpenSeconds"] as? Double { config.findReplaceOpenSeconds = n }
+    if let n = json["findReplaceStepSeconds"] as? Double { config.findReplaceStepSeconds = n }
+    if let n = json["findReplaceApplySeconds"] as? Double { config.findReplaceApplySeconds = n }
     guard config.wpm >= 5, config.wpm <= 300, config.errorRate >= 0, config.errorRate <= 0.3,
           config.countdown >= 0, config.countdown <= 60, config.historyMinCharacters >= 1,
           config.historyMaxCharacters >= config.historyMinCharacters, config.waitBeforeHistory >= 0,
           config.historyViewTime >= 0, config.waitAfterHistory >= 0, config.typoMinCharacters >= 1,
           config.typoMaxCharacters >= config.typoMinCharacters, config.typosMinPerHistory >= 0,
-          config.typosMaxPerHistory >= config.typosMinPerHistory else {
+          config.typosMaxPerHistory >= config.typosMinPerHistory, config.findReplaceOpenSeconds >= 0.2,
+          config.findReplaceStepSeconds >= 0.05, config.findReplaceApplySeconds >= 0.2 else {
         fail("một hoặc nhiều giá trị trong settings.json nằm ngoài phạm vi hợp lệ")
     }
 }
@@ -528,18 +535,18 @@ private func replaceAllInGoogleDocs(wrong: String, correct: String) {
     // Command+F opens only Find. Google Docs uses Command+Shift+H for the
     // actual Find and replace dialog.
     postShortcut(code: 4, flags: [.maskCommand, .maskShift])
-    pumpEvents(for: 0.8)
+    pumpEvents(for: config.findReplaceOpenSeconds)
     postText(wrong)
-    pumpEvents(for: 0.35)
+    pumpEvents(for: config.findReplaceStepSeconds)
     postKey(code: 48) // Replace with input.
-    pumpEvents(for: 0.12)
+    pumpEvents(for: config.findReplaceStepSeconds)
     postText(correct)
-    pumpEvents(for: 0.25)
-    for _ in 0..<5 { postKey(code: 48); pumpEvents(for: 0.08) }
+    pumpEvents(for: config.findReplaceStepSeconds)
+    for _ in 0..<5 { postKey(code: 48); pumpEvents(for: config.findReplaceStepSeconds) }
     postKey(code: 36) // Enter: Thay thế tất cả
-    pumpEvents(for: 0.6)
+    pumpEvents(for: config.findReplaceApplySeconds)
     postKey(code: 53) // Escape: close dialog
-    pumpEvents(for: 0.4)
+    pumpEvents(for: config.findReplaceStepSeconds)
 }
 
 private func exitGoogleDocsTable() {

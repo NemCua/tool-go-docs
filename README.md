@@ -29,6 +29,8 @@ Nếu không truyền tên, thư mục phải chứa đúng một file `.txt`.
 
 Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ngược, lỗi gõ và chu kỳ lịch sử. `typoMinCharacters`/`typoMaxCharacters` là khoảng ký tự giữa các lỗi; `typosMinPerHistory`/`typosMaxPerHistory` là số cụm sai ngẫu nhiên trước mỗi lần lưu. Khi sửa, chương trình dùng “Thay thế tất cả” nên mọi lần xuất hiện của cùng cụm sai đều được sửa.
 
+Nếu hộp “Tìm và thay thế” phản hồi chậm, tăng `findReplaceOpenSeconds`, `findReplaceStepSeconds` và `findReplaceApplySeconds` trong `settings.json`.
+
 ## Kiểm tra mà không gửi phím
 
 ```sh

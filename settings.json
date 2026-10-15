@@ -12,5 +12,8 @@
   "typoMinCharacters": 80,
   "typoMaxCharacters": 160,
   "typosMinPerHistory": 1,
-  "typosMaxPerHistory": 3
+  "typosMaxPerHistory": 3,
+  "findReplaceOpenSeconds": 1.5,
+  "findReplaceStepSeconds": 0.35,
+  "findReplaceApplySeconds": 1.5
 }
