@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Đổi bảng Markdown cho HumanTyper</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    body { margin: 0; background: #f5f7fb; color: #182033; }
+    main { width: min(1100px, calc(100% - 32px)); margin: 40px auto; }
+    h1 { margin-bottom: 8px; font-size: clamp(24px, 4vw, 38px); }
+    p { margin-top: 0; color: #586174; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    section { background: white; border: 1px solid #dfe4ed; border-radius: 16px; padding: 18px; box-shadow: 0 8px 30px #1c29400d; }
+    label { display: block; margin-bottom: 10px; font-weight: 700; }
+    textarea { box-sizing: border-box; width: 100%; min-height: 430px; padding: 14px; resize: vertical; border: 1px solid #cbd2df; border-radius: 10px; font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    textarea:focus { outline: 3px solid #6d8dff33; border-color: #5274e9; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    button { border: 0; border-radius: 9px; padding: 10px 15px; font-weight: 700; cursor: pointer; }
+    .primary { color: white; background: #315bd8; }
+    .secondary { color: #27324a; background: #e9edf5; }
+    #status { min-height: 24px; margin: 12px 0 0; color: #18734a; font-weight: 600; }
+    #status.error { color: #b3261e; }
+    @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } textarea { min-height: 300px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Đổi bảng Markdown → HumanTyper</h1>
+    <p>Dán nguyên bảng có dấu <code>|</code>. Hàng gạch Markdown sẽ tự bị loại và kích thước bảng được tính tự động.</p>
+    <div class="grid">
+      <section>
+        <label for="source">Bảng Markdown</label>
+        <textarea id="source" spellcheck="false" placeholder="| Cột 1 | Cột 2 |&#10;| --- | --- |&#10;| Giá trị 1 | Giá trị 2 |"></textarea>
+        <div class="actions">
+          <button class="primary" id="convert" type="button">Chuyển đổi</button>
+          <button class="secondary" id="clear" type="button">Xóa</button>
+        </div>
+      </section>
+      <section>
+        <label for="result">Nội dung cho file .txt</label>
+        <textarea id="result" readonly spellcheck="false"></textarea>
+        <div class="actions">
+          <button class="primary" id="copy" type="button">Sao chép kết quả</button>
+        </div>
+        <div id="status" role="status" aria-live="polite"></div>
+      </section>
+    </div>
+  </main>
+  <script>
+    const source = document.querySelector('#source');
+    const result = document.querySelector('#result');
+    const status = document.querySelector('#status');
+
+    function decodeEntities(value) {
+      const area = document.createElement('textarea');
+      area.innerHTML = value;
+      return area.value;
+    }
+
+    function splitRow(line) {
+      let value = line.trim();
+      if (value.startsWith('|')) value = value.slice(1);
+      if (value.endsWith('|') && !value.endsWith('\\|')) value = value.slice(0, -1);
+      const cells = [];
+      let cell = '';
+      for (let i = 0; i < value.length; i++) {
+        const char = value[i];
+        if (char === '|' && value[i - 1] !== '\\') {
+          cells.push(cell.trim());
+          cell = '';
+        } else {
+          cell += char;
+        }
+      }
+      cells.push(cell.trim());
+      return cells;
+    }
+
+    function isSeparator(cells) {
+      return cells.length > 0 && cells.every(cell => /^:?-{3,}:?$/.test(cell.replace(/\s/g, '')));
+    }
+
+    function normalizeCell(cell) {
+      // Text copied from chat/JSON commonly escapes every LaTeX slash twice.
+      return cell.replace(/\\\\/g, '\\');
+    }
+
+    function convertTable() {
+      status.className = '';
+      const lines = decodeEntities(source.value).split(/\r?\n/).filter(line => line.trim());
+      const rows = lines.map(splitRow).filter(cells => !isSeparator(cells))
+        .map(cells => cells.map(normalizeCell));
+      if (!rows.length) throw new Error('Chưa tìm thấy hàng dữ liệu nào.');
+      const columns = rows[0].length;
+      const invalidRow = rows.findIndex(row => row.length !== columns);
+      if (invalidRow !== -1) {
+        throw new Error(`Hàng dữ liệu ${invalidRow + 1} có ${rows[invalidRow].length} ô; cần đúng ${columns} ô.`);
+      }
+      result.value = `[[TABLE ${rows.length}x${columns}]]\n${rows.map(row => row.join(' | ')).join('\n')}\n[[ENDTABLE]]`;
+      status.textContent = `Đã tạo bảng ${rows.length} hàng × ${columns} cột.`;
+    }
+
+    document.querySelector('#convert').addEventListener('click', () => {
+      try { convertTable(); } catch (error) {
+        result.value = '';
+        status.className = 'error';
+        status.textContent = error.message;
+      }
+    });
+    document.querySelector('#clear').addEventListener('click', () => {
+      source.value = '';
+      result.value = '';
+      status.textContent = '';
+      source.focus();
+    });
+    document.querySelector('#copy').addEventListener('click', async () => {
+      if (!result.value) return;
+      try {
+        await navigator.clipboard.writeText(result.value);
+      } catch {
+        result.focus();
+        result.select();
+        document.execCommand('copy');
+      }
+      status.className = '';
+      status.textContent = 'Đã sao chép. Dán kết quả vào file .txt trong thư mục input.';
+    });
+  </script>
+</body>
+</html>

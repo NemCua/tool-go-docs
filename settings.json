@@ -1,0 +1,12 @@
+{
+  "wpm": 120,
+  "countdownSeconds": 10,
+  "intentionalTypos": true,
+  "errorRatePercent": 2.5,
+  "historyEnabled": true,
+  "historyMinCharacters": 180,
+  "historyMaxCharacters": 300,
+  "waitBeforeHistorySeconds": 5,
+  "historyViewSeconds": 5,
+  "waitAfterHistorySeconds": 5
+}

@@ -1,0 +1,64 @@
+1.1. Tập từ vựng, DF và IDF
+Bước 1. Xây dựng tập từ vựng theo thứ tự bảng chữ cái
+\[
+V=\{\text{data, improves, language, models, neural, predict, process, text, words}\}
+\]
+Có 9 từ khác nhau.
+Bước 2. Tính DF và IDF
+\(DF(t)\) là số văn bản chứa từ \(t\).
+
+[[TABLE 10x4]]
+Từ \(t\) | Xuất hiện trong | \(DF(t)\) | \(IDF(t)=\ln(4/DF(t))\)
+data | \(D_4\) | 1 | \(\ln4\approx1{,}3863\)
+improves | \(D_4\) | 1 | \(\ln4\approx1{,}3863\)
+language | \(D_1,D_2,D_4\) | 3 | \(\ln(4/3)\approx0{,}2877\)
+models | \(D_1,D_2,D_3,D_4\) | 4 | \(\ln1=0\)
+neural | \(D_3\) | 1 | \(\ln4\approx1{,}3863\)
+predict | \(D_1,D_3\) | 2 | \(\ln2\approx0{,}6931\)
+process | \(D_2\) | 1 | \(\ln4\approx1{,}3863\)
+text | \(D_2,D_3\) | 2 | \(\ln2\approx0{,}6931\)
+words | \(D_1\) | 1 | \(\ln4\approx1{,}3863\)
+[[ENDTABLE]]
+
+Từ models xuất hiện trong cả 4 văn bản nên \(IDF(\text{models})=0\).
+1.2. Véc-tơ TF–IDF của \(D_1\)
+\(D_1\) có 4 từ, mỗi từ xuất hiện 1 lần. Vì vậy, các từ có trong \(D_1\) có:
+\[
+TF=\frac14=0{,}25
+\]
+Các từ không có trong \(D_1\) có \(TF=0\).
+
+[[TABLE 10x5]]
+Từ | \(f(t,D_1)\) | \(TF(t,D_1)\) | IDF | TF–IDF
+data | 0 | 0 | 1,3863 | 0
+improves | 0 | 0 | 1,3863 | 0
+language | 1 | 0,25 | 0,2877 | \(0{,}071925\approx0{,}0719\)
+models | 1 | 0,25 | 0 | 0
+neural | 0 | 0 | 1,3863 | 0
+predict | 1 | 0,25 | 0,6931 | \(0{,}173275\approx0{,}1733\)
+process | 0 | 0 | 1,3863 | 0
+text | 0 | 0 | 0,6931 | 0
+words | 1 | 0,25 | 1,3863 | \(0{,}346575\approx0{,}3466\)
+[[ENDTABLE]]
+
+Theo đúng thứ tự tập từ vựng:
+\[
+\boxed{
+v(D_1)=(0;\ 0;\ 0{,}0719;\ 0;\ 0;\ 0{,}1733;\ 0;\ 0;\ 0{,}3466)
+}
+\]
+1.3. Véc-tơ TF–IDF của \(D_2\)
+\(D_2\) có 4 từ: language, models, process, text. Mỗi từ xuất hiện 1 lần nên có \(TF=0{,}25\).
+
+[[TABLE 10x5]]
+Từ | \(f(t,D_2)\) | \(TF(t,D_2)\) | IDF | TF–IDF
+data | 0 | 0 | 1,3863 | 0
+improves | 0 | 0 | 1,3863 | 0
+language | 1 | 0,25 | 0,2877 | \(0{,}071925\approx0{,}0719\)
+models | 1 | 0,25 | 0 | 0
+neural | 0 | 0 | 1,3863 | 0
+predict | 0 | 0 | 0,6931 | 0
+process | 1 | 0,25 | 1,3863 | \(0{,}346575\approx0{,}3466\)
+text | 1 | 0,25 | 0,6931 | \(0{,}173275\approx0{,}1733\)
+words | 0 | 0 | 1,3863 | 0
+[[ENDTABLE]]
