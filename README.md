@@ -84,6 +84,14 @@ Mở `http://localhost:4173`, chỉnh số/toggle và bấm **Sao chép settings
 
 Trang **Preview tài liệu** có nút **Nạp testText.txt**, nút **Chọn tệp** và nút **Cập nhật preview**. Nó mô phỏng nội dung cuối cùng trên một khung giấy, dùng cùng quy tắc chuyển đổi với bản macOS: directive `[sai, đúng]`, `{save}`, bảng và LaTex (`\\frac`, `\\boxed`, ký hiệu, chỉ số dưới). Preview không gửi phím hoặc thay đổi Google Docs.
 
+## Bảng tiến độ nổi trên macOS
+
+Khi chạy thật (không dùng `--dry-run`), HumanTyper hiện bảng tiến độ native ở góc phải màn hình. Bảng có trạng thái hiện tại, số ký tự còn lại và thời gian ước tính theo WPM; trong đếm ngược, lưu lịch sử, sửa lỗi hoặc tạo bảng, trạng thái cũng được cập nhật. Nó là panel không chiếm focus nên Google Docs vẫn nhận phím.
+
+- Nút **−**: chỉ ẩn bảng tiến độ; quá trình gõ vẫn tiếp tục.
+- Nút **×**: ẩn bảng và dừng quá trình gõ an toàn.
+- Khi gõ xong: bảng tự biến mất.
+
 
 ## Kiểm tra mà không gửi phím
 
