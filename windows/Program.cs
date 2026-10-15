@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 
 record Settings(double Wpm = 120, double ErrorRatePercent = 2.5, int CountdownSeconds = 5,
-    bool IntentionalTypos = true);
+    bool IntentionalTypos = true, bool NaturalRhythm = true, bool HistoryEnabled = true);
 
 static class Native {
     [DllImport("user32.dll", SetLastError = true)] static extern uint SendInput(uint n, INPUT[] p, int size);
@@ -46,11 +46,25 @@ class Program {
     static readonly Random Rng = new();
     static readonly Dictionary<char, string> Neighbours = new() {
         ['a']="qwsz",['b']="vghn",['c']="xdfv",['d']="serfcx",['e']="wsdr",['f']="drtgvc",['g']="ftyhbv",['h']="gyujnb",['i']="ujko",['j']="huikmn",['k']="jiolm",['l']="kop",['m']="njk",['n']="bhjm",['o']="iklp",['p']="ol",['q']="wa",['r']="edft",['s']="awedxz",['t']="rfgy",['u']="yhji",['v']="cfgb",['w']="qase",['x']="zsdc",['y']="tghu",['z']="asx" };
+    static Settings LoadSettings(string path) {
+        if (!File.Exists(path)) return new();
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        var root = document.RootElement;
+        double Number(string name, double fallback) => root.TryGetProperty(name, out var p) && p.TryGetDouble(out var n) ? n : fallback;
+        bool Flag(string name, bool fallback) => root.TryGetProperty(name, out var p) && (p.ValueKind is JsonValueKind.True or JsonValueKind.False) ? p.GetBoolean() : fallback;
+        return new(
+            Wpm: Number("tocDoTuMoiPhut", 120),
+            ErrorRatePercent: Number("tyLeLoiPhanTram", 2.5),
+            CountdownSeconds: (int)Number("demNguocGiay", 5),
+            IntentionalTypos: Flag("batLoiCoY", true),
+            NaturalRhythm: Flag("batNhipTuNhien", true),
+            HistoryEnabled: Flag("batLuuLichSu", true));
+    }
     static void Main(string[] args) {
         var projectRoot = Directory.GetCurrentDirectory();
         var input = Path.Combine(projectRoot, "input");
         var settingsPath = Path.Combine(projectRoot, "settings.json");
-        var settings = File.Exists(settingsPath) ? JsonSerializer.Deserialize<Settings>(File.ReadAllText(settingsPath)) ?? new() : new();
+        var settings = LoadSettings(settingsPath);
         var requested = args.FirstOrDefault(a => !a.StartsWith('-'));
         var dryRun = args.Contains("--dry-run");
         if (args.Contains("--no-errors")) settings = settings with { ErrorRatePercent = 0, IntentionalTypos = false };
@@ -71,7 +85,10 @@ class Program {
             var output = c;
             if (settings.IntentionalTypos && Rng.NextDouble() < settings.ErrorRatePercent / 100 && Neighbours.TryGetValue(char.ToLower(c), out var n)) output = char.IsUpper(c) ? char.ToUpper(n[Rng.Next(n.Length)]) : n[Rng.Next(n.Length)];
             Native.Text(output.ToString());
-            Thread.Sleep(Math.Max(12, (int)(delay * (0.58 + Rng.NextDouble() * .9) + (c is ' ' ? 25 : 0))));
+            var wait = settings.NaturalRhythm
+                ? delay * (0.58 + Rng.NextDouble() * .9) + (c is ' ' ? 25 : 0)
+                : delay;
+            Thread.Sleep(Math.Max(12, (int)wait));
         }
         Console.WriteLine("\nHoàn tất.");
     }
