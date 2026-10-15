@@ -66,15 +66,17 @@ Trang **Preview tài liệu** có nút **Nạp testText.txt**, nút **Chọn t�
 
 ## Bảng tiến độ nổi trên macOS
 
-Khi chạy thật (không dùng `--dry-run`), HumanTyper hiện bảng tiến độ native ở góc phải màn hình. Bảng không có nút chuột để không ảnh hưởng việc gửi phím tới Google Docs; dùng các phím dừng khẩn cấp đã nêu bên dưới nếu cần dừng.
+Khi chạy thật (không dùng `--dry-run`), HumanTyper hiện panel kính mờ native ở góc phải màn hình, gồm trạng thái chữ lớn, thời gian ước tính, số ký tự, phần trăm và thanh tiến độ. Số đếm ngược có animation nhẹ. Bảng không có nút chuột để không ảnh hưởng việc gửi phím tới Google Docs; dùng các phím dừng khẩn cấp đã nêu bên dưới nếu cần dừng.
 
-Thời gian là **ước tính phần việc còn lại**, tính từ WPM, nhịp tự nhiên (khựng ở khoảng trắng, dấu câu, xuống dòng và nghỉ ngẫu nhiên), thời gian mỗi lần xem lịch sử, mật độ/số lỗi dự kiến, directive `{save}` và thao tác tạo bảng. Nó được tính lại khi trạng thái đổi hoặc tối đa mỗi 2 giây trong lúc gõ, không chạy đếm ngược từng giây. Bảng tự biến mất khi hoàn tất.
+Thời gian là **ước tính phần việc còn lại**, tính từ WPM, nhịp tự nhiên, số lần lưu tự động dựa trên tổng ký tự và trung bình `soKyTuLuuToiThieu`/`soKyTuLuuToiDa`, số lỗi dự kiến theo khoảng lỗi và giới hạn mỗi chu kỳ, mỗi directive `[sai, đúng]`, `{save}` và thao tác tạo bảng. Mỗi lần sửa lỗi được tính thêm một lần lưu; xác suất `xacSuatLuuTruocKhiSua` chỉ quyết định lưu trước hay sau khi sửa nên không nhân đôi số lần lưu. Ước tính được tính lại khi trạng thái đổi hoặc tối đa mỗi 2 giây, không chạy đếm ngược từng giây. Bảng tự biến mất khi hoàn tất.
 
 ## Kiểm tra mà không gửi phím
 
 ```sh
 ./run.sh --dry-run
 ```
+
+Chế độ này in thêm thời gian đầy đủ, số lần lưu tự động dự kiến, số lỗi tự động, số directive lưu/sửa và số bảng để dễ đối chiếu trước khi chạy thật.
 
 ## Chạy
 
