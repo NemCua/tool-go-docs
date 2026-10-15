@@ -1,0 +1,42 @@
+# HumanTyper — Bộ kiểm tra toàn diện
+
+## 1. Unicode và dấu câu
+
+Tiếng Việt: Ắ Â Ê Ô Ơ Ư Đ — “ngoặc kép”, ‘ngoặc đơn’, … và dấu € $ % @ # & *.
+English: The quick brown fox jumps over 13 lazy dogs.
+Số và ký hiệu: 0 1 2 3 4 5 6 7 8 9 | + − × ÷ = ≠ ≤ ≥ → ↔ ∞.
+Emoji: 😀 ✅ ⚠️ 📌.
+
+## 2. Xuống dòng và tab
+
+Dòng A.
+Dòng B sau một xuống dòng.
+Mục 1	Mục 2	Mục 3
+
+## 3. Directive sửa và lưu
+
+Xây dựng `[tap, tập]` từ vựng `{save}` theo thứ tự.
+`[helllo yoou, hello you]`
+Từ `chuwx nayf, chữ này` được sửa tại chỗ.
+{save}
+
+## 4. LaTex được chuyển thành văn bản
+
+Phân số: \(\frac{a+b}{c}\).
+Ký hiệu: \(x\in A\Rightarrow x\leq 10\) và \(n_1\neq n_2\).
+Khối:
+\[
+\boxed{v(D₁)=(0;\ 0;\ 0{,}0719;\ 0{,}1733)}
+\]
+
+## 5. Bảng 3 x 3
+
+[[TABLE 3x3]]
+Tên | Điểm | Ghi chú
+An | 9,5 | Đạt
+Bình | 8,0 | Cần ôn
+[[ENDTABLE]]
+
+## 6. Sau bảng
+
+Đây là dòng kiểm tra con trỏ đã thoát khỏi bảng.
