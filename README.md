@@ -1,153 +1,90 @@
-# HumanTyper cho macOS
+# HumanTyper
 
-## Windows
+HumanTyper nhận file `.txt`, chuyển nội dung về dạng Google Docs có thể nhập ổn định rồi gõ bằng sự kiện bàn phím. Công cụ có bản macOS và Windows.
 
-Bản Windows nằm trong thư mục `windows/` và yêu cầu [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
+## Chạy trên macOS
 
-Mở PowerShell tại thư mục dự án rồi chạy:
-
-```powershell
-dotnet run --project windows -- tsst
-```
-
-Nếu muốn kiểm tra file và ước tính thời gian mà không gửi phím:
-
-```powershell
-dotnet run --project windows -- --dry-run
-```
-
-Đặt file UTF-8 vào `input/`. Có thể chỉnh tốc độ, tỷ lệ lỗi và thời gian đếm ngược trong `settings.json`. Sau khi chạy, chuyển sang Google Docs trong thời gian đếm ngược; chương trình sẽ nhập vào cửa sổ đang được chọn.
-
-Phím dừng khẩn cấp trên Windows: `Pause/Break`, `Ctrl+Alt+Shift+Esc`, hoặc đưa chuột vào góc trên-trái màn hình. Bản Windows dùng `Ctrl`/`Alt`/`Shift` thay cho `Command`/`Option` của macOS. Chi tiết xem tại [windows/README.md](windows/README.md).
-
-CLI nhập lại nội dung của file UTF-8 bằng sự kiện bàn phím macOS, với tốc độ biến thiên và lỗi đánh máy được sửa lại. Tốc độ mặc định là 120 WPM; sau mỗi mốc ngẫu nhiên 180–300 ký tự, công cụ nghỉ 5 giây, mở lịch sử phiên bản trong 5 giây, nghỉ thêm 5 giây rồi tiếp tục gõ.
-
-## Biên dịch
-
-```sh
-chmod +x build.sh
-./build.sh
-```
-
-Máy cần có Xcode Command Line Tools. Nếu lệnh `swiftc` chưa tồn tại, cài bằng:
+Cài Xcode Command Line Tools, sau đó build:
 
 ```sh
 xcode-select --install
+chmod +x build.sh run.sh
+./build.sh
 ```
 
-## Chuẩn bị nội dung
-
-Đặt file `.txt` vào thư mục `input/`. Chọn theo tên (có thể bỏ đuôi `.txt`):
+Đặt file UTF-8 vào `input/` rồi chạy:
 
 ```sh
-./run.sh tsst
+./run.sh ten-file
 ```
 
-Nếu không truyền tên, thư mục phải chứa đúng một file `.txt`.
+Có thể bỏ đuôi `.txt`. Nếu không truyền tên file, `input/` phải có đúng một file `.txt`. Mở Google Docs, đặt con trỏ, chạy lệnh và chuyển sang Google Docs trong countdown. Lần đầu chạy cần cấp quyền Accessibility cho Terminal tại **System Settings → Privacy & Security → Accessibility**.
+
+## Kiểm tra trước khi gõ
+
+```sh
+./run.sh ten-file --dry-run
+```
+
+Dry-run chỉ đọc và thống kê file, không gửi phím. Kết quả gồm số ký tự, thời gian ước tính, số lần lưu, directive và bảng.
+
+## Tùy chọn dòng lệnh
+
+```text
+--wpm N          tốc độ gõ, từ 5 đến 1000
+--error-rate N   tỷ lệ lỗi từ 0 đến 30 phần trăm
+--countdown N    countdown từ 0 đến 60 giây
+--seed N         dùng lại cùng chuỗi ngẫu nhiên
+--no-errors      tắt lỗi tự động
+--no-history     tắt lưu lịch sử định kỳ
+--dry-run        chỉ thống kê, không gửi phím
+```
+
+Dừng khẩn cấp bằng phím backtick dưới Escape, `Control + Option + Command + Escape`, hoặc đưa chuột vào góc trên-trái màn hình.
 
 ## Cấu hình
 
-Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ngược, lỗi gõ và chu kỳ lịch sử. Toàn bộ khóa dùng tiếng Việt camelCase. `khoangKyTuLoiToiThieu`/`khoangKyTuLoiToiDa` là khoảng ký tự giữa các lỗi; `soLoiMoiDotToiThieu`/`soLoiMoiDotToiDa` là số lỗi ngẫu nhiên trong một đợt. `xacSuatLuuTruocKhiSua: 0.5` nghĩa là 50% lưu lịch sử trước khi sửa, 50% sửa trước rồi mới lưu.
+Sửa trực tiếp [settings.json](settings.json). Các khóa dùng tiếng Việt camelCase.
 
-`xacSuatLoiTelex` (0–1, mặc định `0.75`) xác định xác suất dùng lỗi Telex cho từ tiếng Việt có dấu, chẳng hạn `chữ` thành `chuwx` và `này` thành `nayf`. Các lỗi còn lại được chọn ngẫu nhiên giữa lặp ký tự, thiếu ký tự, đảo hai ký tự kề nhau và phím gần nhau.
-
-Quy ước dự án: mọi thay đổi cú pháp hoặc hành vi công cụ phải cập nhật đồng thời README này và [chuyen-doi-text.md](chuyen-doi-text.md).
-
-`soTuCumSaiToiThieu` và `soTuCumSaiToiDa` đặt số từ trong một cụm sai. Ví dụ đặt `2` và `3` có thể tạo `chuwx nayf` trước khi xóa cả cụm và gõ lại `chữ này`.
-
-### Toàn bộ settings
-
-| Khóa | Ý nghĩa |
+| Khóa | Tác dụng |
 | --- | --- |
-| `tocDoTuMoiPhut` | Tốc độ gõ WPM, từ 5 đến 1000. |
-| `demNguocGiay` | Thời gian để chuyển focus sang Google Docs. |
-| `batLoiCoY` / `tyLeLoiPhanTram` | Bật lỗi có chủ ý; đặt tỷ lệ về 0 để tắt. |
-| `batLuuLichSu` | Bật các lần nghỉ/lưu lịch sử định kỳ. |
-| `soKyTuLuuToiThieu` / `soKyTuLuuToiDa` | Khoảng ký tự ngẫu nhiên giữa các lần lưu định kỳ. |
-| `choTruocLuuGiay` / `xemLuuLichSuGiay` / `choSauLuuGiay` | Ba thời gian chờ của một lần mở lịch sử. |
-| `khoangKyTuLoiToiThieu` / `khoangKyTuLoiToiDa` | Khoảng ký tự ngẫu nhiên giữa các cụm sai. |
-| `soLoiMoiDotToiThieu` / `soLoiMoiDotToiDa` | Số cụm sai ngẫu nhiên trong mỗi đợt. |
-| `soTuCumSaiToiThieu` / `soTuCumSaiToiDa` | Số từ trong một cụm sai. |
-| `xacSuatLoiTelex` | Tỷ lệ dùng lỗi Telex thay vì lỗi bàn phím khác. |
-| `xacSuatLuuTruocKhiSua` | Tỷ lệ lưu lịch sử trước khi xóa và gõ lại cụm đúng. |
-| `batNhipTuNhien` | Bật/tắt các nhịp khựng ngẫu nhiên, nghỉ dấu câu và thay đổi nhịp gõ. |
+| `tocDoTuMoiPhut` | Tốc độ gõ WPM. |
+| `demNguocGiay` | Thời gian chuyển sang Google Docs. |
+| `batLoiCoY` / `tyLeLoiPhanTram` | Bật lỗi tự động và tỷ lệ lỗi. |
+| `batLuuLichSu` | Bật lưu lịch sử định kỳ. |
+| `soKyTuLuuToiThieu` / `soKyTuLuuToiDa` | Khoảng ký tự giữa các lần lưu. |
+| `choTruocLuuGiay` / `xemLuuLichSuGiay` / `choSauLuuGiay` | Ba khoảng chờ của một lần lưu. |
+| `khoangKyTuLoiToiThieu` / `khoangKyTuLoiToiDa` | Khoảng ký tự giữa các cụm lỗi. |
+| `soLoiMoiDotToiThieu` / `soLoiMoiDotToiDa` | Số lỗi trong một đợt. |
+| `soTuCumSaiToiThieu` / `soTuCumSaiToiDa` | Số từ trong một cụm lỗi. |
+| `xacSuatLoiTelex` | Xác suất dùng lỗi Telex. |
+| `xacSuatLuuTruocKhiSua` | Xác suất lưu trước khi sửa lỗi. |
+| `batNhipTuNhien` | Bật khựng tự nhiên và nghỉ dấu câu. |
 
-## Trang Preview
+## Cú pháp file input
 
-Chạy giao diện local bằng npm:
+### Văn bản thường
 
-```sh
-npm run web
-```
+Gõ nội dung trực tiếp, giữ xuống dòng và tab nếu cần. Công cụ không tự hiểu Markdown; các dấu `#`, `*`, `-` sẽ được gõ như văn bản.
 
-Mở `http://localhost:4173`. Web chỉ còn trang **Preview tài liệu**; trang chỉnh Settings cũ đã được bỏ. Muốn đổi cấu hình, sửa trực tiếp file `settings.json` rồi tải lại Preview.
-
-Preview có nút **Nạp testText.txt**, nút **Chọn tệp** và nút **Cập nhật preview**. Khi nạp hoặc dán nội dung, trang đọc `settings.json` và hiện thời gian ước tính cùng số ký tự, lưu tự động, lỗi, directive và bảng. Nội dung mô phỏng dùng cùng quy tắc chuyển đổi với bản macOS: directive `[sai, đúng]`, `{save}`, bảng và LaTex (`\\frac`, `\\boxed`, ký hiệu, chỉ số dưới). Preview không gửi phím hoặc thay đổi Google Docs.
-
-## Bảng tiến độ nổi trên macOS
-
-Khi chạy thật (không dùng `--dry-run`), HumanTyper hiện panel native nền tối ở góc phải màn hình, gồm trạng thái chữ lớn, thời gian còn lại ước tính, thời gian thực đã chạy, số ký tự, phần trăm và thanh tiến độ. Đồng hồ thực bắt đầu từ `00:00` sau countdown và tăng theo thời gian thật. Panel luôn dùng nền tối tương phản kể cả khi macOS đang ở Light Mode; số đếm ngược có animation nhẹ. Bảng không có nút chuột để không ảnh hưởng việc gửi phím tới Google Docs; dùng các phím dừng khẩn cấp đã nêu bên dưới nếu cần dừng.
-
-Thời gian `Còn ≈` là **ước tính phần việc còn lại**, tính từ WPM, nhịp tự nhiên, số lần lưu tự động dựa trên tổng ký tự và trung bình `soKyTuLuuToiThieu`/`soKyTuLuuToiDa`, số lỗi dự kiến theo khoảng lỗi và giới hạn mỗi chu kỳ, mỗi directive `[sai, đúng]`, `{save}` và thao tác tạo bảng. Mỗi hàng của bảng cộng 1 giây và mỗi cột cộng 1 giây. Mỗi lần sửa lỗi được tính thêm một lần lưu; xác suất `xacSuatLuuTruocKhiSua` chỉ quyết định lưu trước hay sau khi sửa nên không nhân đôi số lần lưu. Ước tính được tính lại khi trạng thái đổi hoặc tối đa mỗi 2 giây, không chạy đếm ngược từng giây. `Đã chạy` là đồng hồ thực độc lập và cập nhật mỗi giây. Khi hoàn tất, panel hiện tổng thời gian thực trong 4 giây rồi tự biến mất; terminal cũng in tổng số giây.
-
-
-## Kiểm tra mà không gửi phím
-
-```sh
-./run.sh --dry-run
-```
-
-Chế độ này in thêm thời gian đầy đủ, số lần lưu tự động dự kiến, số lỗi tự động, số directive lưu/sửa và số bảng để dễ đối chiếu trước khi chạy thật.
-
-## Chạy
-
-Mở Google Docs, đặt định dạng và vị trí con trỏ mong muốn. Sau đó quay lại Terminal và chạy:
-
-```sh
-./run.sh
-```
-
-Chương trình mặc định đếm ngược 15 giây. Trong thời gian đó, chuyển sang Google Docs trên Brave hoặc Chrome và đặt con trỏ tại vị trí cần nhập. Công cụ gõ vào cửa sổ đang được chọn nên không phụ thuộc trình duyệt.
-
-Có ba cách dừng khẩn cấp, đều hoạt động dù Google Docs đang được focus:
-
-- Nhấn phím **`** (phím vật lý ngay dưới Escape).
-- Nhấn **Control + Option + Command + Escape**.
-- Đưa con trỏ chuột sát vào **góc trên-trái của màn hình chính**.
-
-Escape thường được dành cho chương trình tự đóng giao diện lịch sử phiên bản. Sau mỗi mốc ngẫu nhiên 180–300 ký tự, công cụ nghỉ 5 giây, gửi `Command + Option + Shift + H`, chờ 5 giây rồi gửi Escape để quay lại trang viết, sau đó nghỉ thêm 5 giây. Google Docs vẫn tự quyết định cách nhóm và lưu các phiên bản.
-
-Lần đầu chạy, macOS sẽ yêu cầu quyền **Privacy & Security → Accessibility** cho Terminal (hoặc ứng dụng terminal bạn đang dùng). Cấp quyền rồi chạy lại lệnh.
-
-Các tuỳ chọn đầy đủ:
+### Sửa thủ công
 
 ```text
---wpm N          tốc độ trung bình (5–300)
---error-rate N   tỷ lệ phần trăm lỗi (0–30)
---countdown N    thời gian chuyển cửa sổ (0–60 giây)
---seed N         tái tạo cùng chuỗi ngẫu nhiên
---no-errors      tắt lỗi cố ý
---no-history     không tự mở lịch sử phiên bản và nghỉ dài
---dry-run        không gửi sự kiện bàn phím
-```
-
-Lưu ý: tiện ích nhập văn bản thuần. Nội dung sẽ kế thừa định dạng đang đặt tại con trỏ; tab có thể làm đổi ô hoặc điều khiển giao diện tuỳ ứng dụng đích.
-
-## Bảng trong Google Docs
-
-## Directive thủ công trong văn bản
-
-Đặt directive trực tiếp trong file `.txt`; chương trình không gõ các dấu directive ra Google Docs.
-
-```text
+Xây dựng `[tap, tập]` từ vựng.
 `[helllo yoou, hello you]`
-Xây dựng `[tap, tập]` từ vựng {save} theo thứ tự.
 ```
 
-- `` `[sai, đúng]` ``: gõ phần `sai`, chạy luồng lưu/sửa hiện tại, Backspace toàn cụm rồi gõ phần `đúng`. Backtick là tuỳ chọn.
-- `` `{save}` ``: lưu lịch sử ngay tại vị trí directive, không tạo lỗi hoặc sửa nội dung. Backtick là tuỳ chọn.
+Công cụ gõ phần sai, chạy luồng lưu/sửa, xóa phần sai rồi gõ phần đúng. Backtick là tùy chọn. Không dùng dấu `]`, dấu phẩy phân cách hoặc xuống dòng bên trong directive.
 
-Dùng cú pháp sau trong file `.txt`:
+### Lưu tại vị trí chỉ định
+
+```text
+Xây dựng tập từ vựng `{save}` theo thứ tự.
+```
+
+`{save}` không được gõ ra tài liệu; công cụ mở lịch sử tại vị trí đó theo `settings.json`.
+
+### Bảng
 
 ```text
 [[TABLE 3x2]]
@@ -157,4 +94,33 @@ Bình | 22
 [[ENDTABLE]]
 ```
 
-Số dòng dữ liệu và số ô phân cách bằng `|` phải khớp kích thước đã khai báo. Công cụ dùng Tool Finder tiếng Việt của Google Docs để tạo bảng 2×2, điều chỉnh số hàng/cột bằng các lệnh bảng, đưa con trỏ về ô đầu rồi nhập lần lượt các ô; bảng thử nên đặt cuối tài liệu.
+Kích thước phải khớp dữ liệu, dùng `|` để ngăn cách ô. Ước tính cộng 1 giây cho mỗi hàng và 1 giây cho mỗi cột.
+
+### Công thức
+
+Hỗ trợ một số lệnh LaTeX đơn giản trong `\(...\)` hoặc `\[...\]`, gồm `\frac`, `\boxed`, `\leq`, `\geq`, `\in`, `\to` và chỉ số dưới. Công thức phức tạp như `align`, `matrix`, `cases` không được đảm bảo.
+
+## Preview trên trình duyệt
+
+```sh
+npm run web
+```
+
+Mở `http://localhost:4173`. Preview đọc trực tiếp `settings.json`, mô phỏng nội dung sau chuyển đổi và tính thời gian ước tính. Có thể nạp `testText.txt`, chọn file `.txt` hoặc dán nội dung rồi bấm **Cập nhật preview**. Preview không gửi phím và không thay đổi Google Docs. Nếu sửa `settings.json`, tải lại trang.
+
+## Bảng tiến độ macOS
+
+Khi chạy thật, panel nền tối ở góc phải hiển thị trạng thái, thời gian còn lại ước tính, thời gian thực đã chạy, số ký tự, phần trăm và thanh tiến độ. Đồng hồ thực bắt đầu từ `00:00` sau countdown, tăng theo thời gian thật và hiện tổng thời gian trong 4 giây sau khi hoàn tất rồi tự đóng.
+
+## Windows
+
+Bản Windows nằm trong [windows/](windows/) và yêu cầu .NET 8 SDK:
+
+```powershell
+dotnet run --project windows -- ten-file
+dotnet run --project windows -- --dry-run
+```
+
+Bản Windows dùng cùng `settings.json`, nhập UTF-8 bằng sự kiện bàn phím và dùng `Ctrl`, `Alt`, `Shift` thay cho phím macOS. Xem [windows/README.md](windows/README.md).
+
+Khi thay đổi cú pháp hoặc hành vi, cập nhật đồng thời README này và [chuyen-doi-text.md](chuyen-doi-text.md).

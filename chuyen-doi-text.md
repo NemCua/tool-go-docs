@@ -1,113 +1,103 @@
-# Hướng dẫn chuyển đổi nội dung sang file `.txt`
+# Chuyển nội dung AI thành file HumanTyper
 
-File trong thư mục `input/` phải là văn bản UTF-8. Công cụ sẽ gõ nội dung theo đúng thứ tự, nhận diện bảng, directive lưu/sửa và một số công thức LaTeX đơn giản.
+File này hướng dẫn AI biến văn bản thô thành file `.txt` chuẩn cho HumanTyper. Bạn chỉ cần đưa nội dung AI tạo ra cho một AI khác cùng prompt bên dưới; kết quả là file sạch để đặt vào `input/` và chạy, không cần tự sửa thủ công.
 
-## 1. Văn bản thường
-
-Dán văn bản trực tiếp vào file `.txt`. Giữ xuống dòng nếu muốn tạo đoạn mới.
+## Prompt chuẩn hóa
 
 ```text
-Đây là đoạn đầu tiên.
+Bạn là người chuẩn hóa file input cho công cụ HumanTyper.
 
-Đây là đoạn thứ hai.
+Input là nội dung thô do tôi cung cấp. Hãy chuyển nó thành nội dung UTF-8 chuẩn để lưu thành file .txt trong thư mục input/.
+
+Yêu cầu:
+1. Giữ nguyên nội dung, thứ tự, ngôn ngữ, số liệu và ý nghĩa.
+2. Không tự thêm lời giải thích, nhận xét hoặc nội dung mới.
+3. Giữ các xuống dòng có ý nghĩa. Không dùng Markdown cho tiêu đề, danh sách hoặc in đậm nếu các dấu đó không phải nội dung cần gõ.
+4. Chuyển mọi bảng thành cú pháp:
+   [[TABLE số_hàngxsố_cột]]
+   ô 1 | ô 2
+   [[ENDTABLE]]
+   Số hàng và số cột phải khớp chính xác dữ liệu.
+5. Nếu cần lưu tại một vị trí, đặt `{save}` đúng vị trí đó.
+6. Nếu có cặp sai/đúng, dùng `[sai, đúng]`; có thể bọc bằng backtick.
+7. Giữ công thức đơn giản trong \(...\) hoặc \[...\], dùng các lệnh HumanTyper hỗ trợ như \frac, \boxed, \leq, \geq, \in, \to và chỉ số dưới.
+8. Không trả về bảng Markdown, HTML, JSON, code fence hoặc chú thích trong nội dung file.
+9. Kiểm tra không còn bảng thiếu [[ENDTABLE]], directive bị xuống dòng, dấu ] làm hỏng directive hoặc ký tự điều khiển thừa.
+
+Chỉ trả về nội dung file .txt hoàn chỉnh trong một code block plain text. Không viết gì trước hoặc sau code block.
+
+Nội dung cần chuyển:
+--- BẮT ĐẦU INPUT ---
+[DÁN NỘI DUNG Ở ĐÂY]
+--- KẾT THÚC INPUT ---
 ```
 
-Không dùng Markdown cho tiêu đề, in đậm hay danh sách nếu không muốn các dấu `#`, `*`, `-` bị gõ ra tài liệu.
-
-## 2. Bảng
-
-Chỉ dùng đúng cú pháp dưới đây. Số hàng/cột trong khai báo phải khớp hoàn toàn với dữ liệu.
-
-```text
-[[TABLE 3x2]]
-Tên | Tuổi
-An | 20
-Bình | 22
-[[ENDTABLE]]
-```
-
-- `[[TABLE 3x2]]`: 3 hàng, 2 cột.
-- Mỗi hàng phải có đúng số ô; ngăn cách ô bằng dấu `|`.
-- Không để thêm dấu `|` ở đầu/cuối hàng.
-- Không chèn dòng trống trong bảng.
-- Đặt bảng ở cuối tài liệu nếu đang thử, để dễ kiểm tra vị trí con trỏ.
-
-## 3. Lỗi gõ và sửa thủ công
-
-Dùng `[phần sai, phần đúng]`. Có thể bọc directive bằng backtick; các dấu directive sẽ không bị gõ vào Google Docs.
-
-```text
-Xây dựng `[tap, tập]` từ vựng.
-`[helllo yoou, hello you]`
-```
-
-Công cụ sẽ gõ phần sai, thực hiện luồng lưu/sửa đã cấu hình, Backspace đúng độ dài phần sai, rồi gõ phần đúng.
-
-Lưu ý:
-
-- Mỗi directive chỉ dùng một dấu phẩy phân cách phần sai và phần đúng.
-- Không xuống dòng bên trong directive.
-- Không dùng `]` bên trong hai phần của directive.
-
-## 4. Lưu lịch sử tại vị trí xác định
-
-Đặt `{save}` hoặc `` `{save}` `` tại nơi muốn mở lịch sử phiên bản.
-
-```text
-Xây dựng tập từ vựng {save} theo thứ tự chữ cái.
-```
-
-Directive sẽ không được gõ ra tài liệu. Công cụ chờ theo `choTruocLuuGiay`, mở lịch sử trong `xemLuuLichSuGiay`, sau đó chờ `choSauLuuGiay` rồi tiếp tục.
-
-## 5. Công thức LaTex
-
-Đặt công thức inline trong `\(` và `\)`, hoặc công thức khối trong `\[` và `\]`.
-
-```text
-Giá trị là \(\frac{a}{b}\).
-
-\[
-\boxed{v(D₁)=(0;\ 0;\ 0,0719)}
-\]
-```
-
-Công cụ chuyển một số lệnh phổ biến sang văn bản Unicode:
-
-```text
-\frac{a}{b}   → (a)/(b)
-\boxed{x}     → x
-\leq          → ≤
-\geq          → ≥
-\in           → ∈
-\to           → →
-\Rightarrow   → →
-\; hoặc \,    → khoảng trắng LaTex bị bỏ
-```
-
-Không dùng công thức LaTex quá phức tạp, macro tự định nghĩa, ảnh công thức hoặc môi trường như `align`, `matrix`, `cases` nếu cần kết quả chính xác trong Google Docs.
-
-## 6. Checklist trước khi chạy
-
-1. Lưu file ở UTF-8, đuôi `.txt`, trong thư mục `input/`.
-2. Kiểm tra `[[TABLE ...]]` có đủ `[[ENDTABLE]]` và đúng số hàng/cột.
-3. Kiểm tra directive `[sai, đúng]` không chứa dấu `]` hoặc xuống dòng.
-4. Kiểm tra `{save}` viết đúng chính tả.
-5. Chạy thử an toàn:
+Lấy phần bên trong code block, lưu bằng UTF-8 vào `input/ten-file.txt`, rồi kiểm tra:
 
 ```sh
 ./run.sh ten-file --dry-run
-```
-
-6. Khi số ký tự và số bảng đúng, mở Google Docs, đặt con trỏ, rồi chạy bình thường:
-
-```sh
 ./run.sh ten-file
 ```
 
-## 7. Preview trước khi gõ
+## Ví dụ chuyển đổi
 
-Chạy `npm run web` rồi mở `http://localhost:4173`; địa chỉ gốc mở thẳng **Preview tài liệu** vì trang Settings web đã được bỏ. Bấm **Nạp testText.txt**, **Chọn tệp**, hoặc dán trực tiếp nội dung; trang sẽ đọc `settings.json`, hiện thời gian ước tính và bản mô phỏng dạng trang giấy. Muốn đổi cấu hình, sửa trực tiếp `settings.json` rồi tải lại trang. Preview dùng cùng quy tắc chuyển đổi với bản macOS: directive, bảng, `\\frac`, `\\boxed`, ký hiệu và chỉ số dưới; đây là kiểm tra trước khi chạy, không thay thế kiểm tra Google Docs thật.
+### Bảng
 
-## 8. Bảng tiến độ khi chạy trên macOS
+Input thô:
 
-Khi chạy bình thường, panel native nền tối hiện ở góc phải với trạng thái chữ lớn, thời gian còn lại ước tính, đồng hồ thực `Đã chạy`, số ký tự, phần trăm, thanh tiến độ và animation đếm ngược. Đồng hồ thực bắt đầu từ `00:00` ngay sau countdown và tăng mỗi giây. Panel ép giao diện tối để luôn đủ tương phản cả trong macOS Light Mode. Bảng không có nút chuột; dùng phím dừng khẩn cấp nếu cần dừng. Ước tính gồm WPM, nhịp tự nhiên, số lần lưu tự động suy ra từ tổng ký tự và khoảng min/max, lỗi dự kiến theo khoảng lỗi/giới hạn mỗi chu kỳ, từng directive sửa hoặc `{save}`, cùng thời gian tạo bảng: mỗi hàng +1 giây, mỗi cột +1 giây. Mỗi lần sửa lỗi được tính một lần lưu; xác suất lưu trước khi sửa chỉ đổi vị trí lần lưu. Ước tính được tính lại khi trạng thái đổi hoặc tối đa mỗi 2 giây, không giảm từng giây. Khi hoàn tất, panel đổi sang tổng thời gian thực, giữ lại 4 giây rồi tự đóng; terminal cũng in tổng số giây.
+```text
+Tên | Điểm | Ghi chú
+An | 9,5 | Đạt
+Bình | 8,0 | Cần ôn
+```
+
+Output chuẩn:
+
+```text
+[[TABLE 3x3]]
+Tên | Điểm | Ghi chú
+An | 9,5 | Đạt
+Bình | 8,0 | Cần ôn
+[[ENDTABLE]]
+```
+
+Khai báo `3x3` gồm cả dòng tiêu đề.
+
+### Sửa thủ công
+
+```text
+Từ `[chuwx nayf, chữ này]` được sửa tại chỗ.
+```
+
+HumanTyper sẽ gõ phần sai, chạy luồng lưu/sửa, xóa phần sai và gõ phần đúng.
+
+### Lưu tại vị trí
+
+```text
+Xây dựng tập từ vựng `{save}` theo thứ tự.
+```
+
+`{save}` là lệnh điều khiển, không xuất hiện trong Google Docs.
+
+### Công thức
+
+```text
+Phân số: \(\frac{a+b}{c}\).
+Ký hiệu: \(x\in A\to x\leq 10\) và \(n_1\neq n_2\).
+
+\[
+\boxed{v(D₁)=(0;\ 0;\ 0{,}0719;\ 0{,}1733)}
+\]
+```
+
+HumanTyper chuyển các lệnh được hỗ trợ thành văn bản Unicode khi nhập. Với công thức phức tạp, yêu cầu AI chuyển thành văn bản Unicode đơn giản.
+
+## Checklist
+
+- File là UTF-8 và có đuôi `.txt`.
+- Bảng có đủ `[[ENDTABLE]]`, đúng số hàng/cột.
+- Directive sửa có đúng một dấu phẩy: `[sai, đúng]`.
+- `{save}` nằm đúng vị trí cần lưu.
+- Không còn code fence, JSON, HTML hoặc lời giải thích của AI trong file.
+- Chạy `--dry-run` trước khi gửi phím.
+- Dùng `npm run web` để xem Preview nếu cần.
