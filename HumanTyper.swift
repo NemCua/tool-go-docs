@@ -710,16 +710,21 @@ var targetTyposThisHistoryCycle = rng.int(config.typosMinPerHistory...config.typ
 func typeCharacter(_ character: Character) {
     if stopRequested { return }
 
-    if untilBurstChange == 0 {
+    if !config.plainTypingOnly && untilBurstChange == 0 {
         burstFactor = rng.between(0.72, 1.32)
         untilBurstChange = rng.int(3...12)
     }
-    untilBurstChange -= 1
+    if !config.plainTypingOnly { untilBurstChange -= 1 }
 
     postText(String(character))
     typed += 1
     typedSinceLongPause += 1
-    pumpEvents(for: naturalDelay(after: character, base: baseDelay, burst: burstFactor, rng: &rng))
+    // Plain mode is deliberately constant: no punctuation pauses, bursts, or
+    // random breaks—only the delay required by the selected WPM.
+    let delay = config.plainTypingOnly
+        ? baseDelay
+        : naturalDelay(after: character, base: baseDelay, burst: burstFactor, rng: &rng)
+    pumpEvents(for: delay)
 
     if config.longPauses && config.visitHistoryDuringPauses && typedSinceLongPause >= nextLongPauseAt && !stopRequested {
         longPauseCount += 1

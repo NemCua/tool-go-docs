@@ -45,6 +45,8 @@ Lệnh trên đọc `input/testText.txt` và gõ ở 500 WPM. Hoặc đặt `"ch
 ./run.sh testText
 ```
 
+Chế độ này gõ liên tục với độ trễ cố định theo WPM, không có nhịp nghỉ ở dấu câu, khoảng dừng ngẫu nhiên hoặc nghỉ lịch sử.
+
 ## Kiểm tra mà không gửi phím
 
 ```sh
