@@ -103,6 +103,18 @@ Lưu ý: tiện ích nhập văn bản thuần. Nội dung sẽ kế thừa đ�
 
 ## Bảng trong Google Docs
 
+## Directive thủ công trong văn bản
+
+Đặt directive trực tiếp trong file `.txt`; chương trình không gõ các dấu directive ra Google Docs.
+
+```text
+`[helllo yoou, hello you]`
+Xây dựng `[tap, tập]` từ vựng {save} theo thứ tự.
+```
+
+- `` `[sai, đúng]` ``: gõ phần `sai`, chạy luồng lưu/sửa hiện tại, Backspace toàn cụm rồi gõ phần `đúng`. Backtick là tuỳ chọn.
+- `{save}`: lưu lịch sử ngay tại vị trí directive, không tạo lỗi hoặc sửa nội dung.
+
 Dùng cú pháp sau trong file `.txt`:
 
 ```text

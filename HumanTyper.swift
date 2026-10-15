@@ -399,6 +399,34 @@ private func naturalDelay(after character: Character, base: Double, burst: Doubl
 enum DocumentPart {
     case text(String)
     case table(rows: Int, columns: Int, cells: [String])
+    case manualCorrection(wrong: String, correct: String)
+    case save
+}
+
+private func expandDirectives(_ parts: [DocumentPart]) -> [DocumentPart] {
+    let pattern = #"`?\[([^,\]\n]+),\s*([^\]\n]+)\]`?|\{save\}"#
+    let regex = try! NSRegularExpression(pattern: pattern)
+    var output: [DocumentPart] = []
+    for part in parts {
+        guard case .text(let text) = part else { output.append(part); continue }
+        let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
+        var cursor = text.startIndex
+        for match in matches {
+            guard let whole = Range(match.range, in: text) else { continue }
+            if cursor < whole.lowerBound { output.append(.text(String(text[cursor..<whole.lowerBound]))) }
+            if match.range(at: 1).location != NSNotFound,
+               let wrongRange = Range(match.range(at: 1), in: text),
+               let correctRange = Range(match.range(at: 2), in: text) {
+                output.append(.manualCorrection(wrong: String(text[wrongRange]).trimmingCharacters(in: .whitespaces),
+                                                correct: String(text[correctRange]).trimmingCharacters(in: .whitespaces)))
+            } else {
+                output.append(.save)
+            }
+            cursor = whole.upperBound
+        }
+        if cursor < text.endIndex { output.append(.text(String(text[cursor...]))) }
+    }
+    return output
 }
 
 private func convertMathBody(_ body: String) -> String {
@@ -569,7 +597,7 @@ private func parseDocument(_ content: String) -> [DocumentPart] {
         index += 1
     }
     if !plain.isEmpty { parts.append(.text(plain)) }
-    return parts
+    return expandDirectives(parts)
 }
 
 private func runGoogleDocsCommand(_ command: String, settleTime: Double = 0.35) {
@@ -644,6 +672,8 @@ let textCharacterCount = documentParts.reduce(0) { total, part in
     switch part {
     case .text(let text): return total + text.count
     case .table(_, _, let cells): return total + cells.reduce(0) { $0 + $1.count }
+    case .manualCorrection(_, let correct): return total + correct.count
+    case .save: return total
     }
 }
 let tableCount = documentParts.reduce(0) { total, part in
@@ -819,11 +849,24 @@ func typeString(_ text: String) {
     }
 }
 
+func typeLiteral(_ text: String) {
+    for character in text where !stopRequested { typeCharacter(character) }
+}
+
 documentLoop: for part in documentParts {
     if stopRequested { break }
     switch part {
     case .text(let text):
         typeString(text)
+    case .manualCorrection(let wrong, let correct):
+        print("\nĐang xử lý lỗi thủ công ‘\(wrong)’ → ‘\(correct)’…")
+        typeLiteral(wrong)
+        correctPhrase(wrong: wrong, correct: correct)
+    case .save:
+        print("\nĐang lưu lịch sử theo directive {save}…")
+        pumpEvents(for: config.waitBeforeHistory)
+        if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
+        if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
     case .table(let rows, let columns, let cells):
         print("\nĐang tạo bảng \(rows)x\(columns)…")
         createGoogleDocsTable(rows: rows, columns: columns, positionAtStart: !config.tableOnly)
