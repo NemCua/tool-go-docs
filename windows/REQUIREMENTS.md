@@ -27,7 +27,7 @@ File `settings.json` và thư mục `input/` phải ở thư mục gốc dự á
 
 ## Lỗi sửa và lưu lịch sử
 
-- Khi `batLoiCoY` bật, HumanTyper cố ý gõ sai rồi gửi Backspace để xóa và gõ lại đúng.
+- Khi `batLoiCoY` bật, HumanTyper cố ý gõ sai rồi gửi Backspace scan-code vật lý để xóa và gõ lại đúng. Điều này tương thích hơn với Chrome/Google Docs trong máy cloud và IME Windows.
 - `batLuuLichSu` bật sẽ dùng `Ctrl + Alt + Shift + H` để mở Version history. Google Docs phải nhận shortcut này; nếu tài khoản/chính sách tổ chức chặn Version history, đặt `batLuuLichSu: false` để vẫn dùng sửa lỗi nhưng không mở lịch sử.
 - Directive `{save}` yêu cầu Version history khả dụng. Directive `[sai, đúng]` vẫn sửa được khi `batLuuLichSu` tắt.
 

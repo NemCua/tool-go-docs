@@ -25,7 +25,7 @@ static class Native {
     [StructLayout(LayoutKind.Sequential)] struct MOUSEINPUT { public int dx, dy; public uint mouseData, flags, time; public IntPtr extra; }
     [StructLayout(LayoutKind.Sequential)] struct HARDWAREINPUT { public uint message; public ushort low, high; }
     [StructLayout(LayoutKind.Sequential)] struct POINT { public int X, Y; }
-    const uint Keyboard = 1, Unicode = 4, KeyUp = 2;
+    const uint Keyboard = 1, Unicode = 4, KeyUp = 2, ScanCode = 8;
     public const ushort Backspace = 0x08, Tab = 0x09, Enter = 0x0D, Escape = 0x1B,
         Control = 0x11, Shift = 0x10, Alt = 0x12, Slash = 0xBF, H = 0x48, T = 0x54, E = 0x45, Up = 0x26;
 
@@ -47,6 +47,14 @@ static class Native {
     // Google Docs may drop a virtual key when down/up are emitted in the same
     // scheduler slice. Keep a short real key press, especially for Backspace.
     public static void Press(ushort key) { Key(key); Thread.Sleep(18); Key(key, true); Thread.Sleep(12); }
+    // Chrome/Docs can ignore VK_BACK from an injected event in some cloud/IME
+    // sessions. The physical keyboard scan-code for Backspace is 0x0E.
+    public static void PressBackspace() {
+        Send(new INPUT { type = Keyboard, data = new INPUTUNION { keyboard = new KEYBDINPUT { scan = 0x0E, flags = ScanCode } } });
+        Thread.Sleep(28);
+        Send(new INPUT { type = Keyboard, data = new INPUTUNION { keyboard = new KEYBDINPUT { scan = 0x0E, flags = ScanCode | KeyUp } } });
+        Thread.Sleep(35);
+    }
     public static void Shortcut(ushort key, params ushort[] modifiers) {
         foreach (var modifier in modifiers) Key(modifier);
         Press(key);
@@ -184,7 +192,7 @@ class Program {
         // Give Docs time to leave the history view and commit the wrong text
         // before a sequence of Backspace virtual-key events.
         Sleep(.18);
-        for (var index = 0; index < TextElementCount(wrong); index++) { Native.Press(Native.Backspace); Sleep(.065); }
+        for (var index = 0; index < TextElementCount(wrong); index++) { Native.PressBackspace(); Sleep(.065); }
         Sleep(.18);
         if (!saveFirst && settings.HistoryEnabled) VisitHistory(false);
         TypeRaw(correct);
