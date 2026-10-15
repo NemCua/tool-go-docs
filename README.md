@@ -49,6 +49,17 @@ Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ng�
 | `xacSuatLoiTelex` | Tỷ lệ dùng lỗi Telex thay vì lỗi bàn phím khác. |
 | `xacSuatLuuTruocKhiSua` | Tỷ lệ lưu lịch sử trước khi xóa và gõ lại cụm đúng. |
 | `chiGoVanBan` | Chế độ gõ đều thuần túy: không lỗi, không lưu, không sửa. |
+| `batNhipTuNhien` | Bật/tắt các nhịp khựng ngẫu nhiên, nghỉ dấu câu và thay đổi nhịp gõ. |
+
+## Trang chỉnh settings
+
+Chạy giao diện local bằng npm:
+
+```sh
+npm run web
+```
+
+Mở `http://localhost:4173`, chỉnh số/toggle và bấm **Sao chép settings.json**. Dán JSON đó vào `settings.json` trước khi chạy công cụ.
 
 ## Chỉ gõ văn bản
 
