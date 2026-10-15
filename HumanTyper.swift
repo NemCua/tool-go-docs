@@ -468,6 +468,17 @@ private func convertMathBody(_ body: String) -> String {
         result.replaceSubrange(fraction.lowerBound..<denominator.1, with: "(\(numerator.0))/(\(denominator.0))")
     }
 
+    // Boxed math is a visual LaTex wrapper. Google Docs plain typing should
+    // receive only its contents: \boxed{v(D)} -> v(D).
+    while let boxed = result.range(of: #"\boxed"#) {
+        var contentStart = boxed.upperBound
+        while contentStart < result.endIndex && result[contentStart].isWhitespace {
+            contentStart = result.index(after: contentStart)
+        }
+        guard let content = bracedGroup(in: result, from: contentStart) else { break }
+        result.replaceSubrange(boxed.lowerBound..<content.1, with: content.0)
+    }
+
     // Also accept TeX's compact single-token form: \frac14 -> 1/4.
     let compactFraction = try! NSRegularExpression(pattern: #"\\frac\s*([A-Za-z0-9])\s*([A-Za-z0-9])"#)
     result = compactFraction.stringByReplacingMatches(
@@ -511,6 +522,7 @@ private func convertMathBody(_ body: String) -> String {
         (#"\geq"#, "≥"), (#"\le"#, "≤"), (#"\ge"#, "≥"),
         (#"\in"#, "∈"), (#"\cup"#, "∪"), (#"\cap"#, "∩"),
         (#"\to"#, "→"), (#"\mid"#, " | "), (#"\ln"#, "ln"),
+        (#"\;"#, ""), (#"\,"#, ""), (#"\!"#, ""), (#"\ "#, ""),
         (#"\{"#, "{"), (#"\}"#, "}"), ("{,}", ","),
         ("_0", "₀"), ("_1", "₁"), ("_2", "₂"), ("_3", "₃"),
         ("_4", "₄"), ("_5", "₅"), ("_6", "₆"), ("_7", "₇"),
