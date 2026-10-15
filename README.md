@@ -29,6 +29,8 @@ Nếu không truyền tên, thư mục phải chứa đúng một file `.txt`.
 
 Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ngược, lỗi gõ và chu kỳ lịch sử. `typoMinCharacters`/`typoMaxCharacters` là khoảng ký tự giữa các lỗi; `typosMinPerHistory`/`typosMaxPerHistory` là số cụm sai ngẫu nhiên trước mỗi lần lưu. Mỗi lỗi được sửa ngay sau một chu kỳ lịch sử: chờ trước khi mở lịch sử, xem lịch sử, chờ sau đó, Backspace phần sai và gõ lại phần đúng. Hộp “Tìm và thay thế” vẫn tắt mặc định.
 
+`telexTypoProbability` (0–1, mặc định `0.75`) xác định xác suất dùng lỗi Telex cho từ tiếng Việt có dấu, chẳng hạn `chữ` thành `chuwx` và `này` thành `nayf`; phần còn lại dùng lỗi phím gần nhau.
+
 Nếu hộp “Tìm và thay thế” phản hồi chậm, tăng `findReplaceOpenSeconds`, `findReplaceStepSeconds` và `findReplaceApplySeconds` trong `settings.json`.
 
 ## Kiểm tra mà không gửi phím

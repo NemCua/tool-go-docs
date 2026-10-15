@@ -26,6 +26,7 @@ struct Config {
     var typoMaxCharacters = 160
     var typosMinPerHistory = 1
     var typosMaxPerHistory = 3
+    var telexTypoProbability = 0.75
     var autoCorrectTypos = false
     var findReplaceOpenSeconds = 1.5
     var findReplaceStepSeconds = 0.35
@@ -125,6 +126,7 @@ private func loadSettings(into config: inout Config) {
     if let n = json["typoMaxCharacters"] as? Int { config.typoMaxCharacters = n }
     if let n = json["typosMinPerHistory"] as? Int { config.typosMinPerHistory = n }
     if let n = json["typosMaxPerHistory"] as? Int { config.typosMaxPerHistory = n }
+    if let n = json["telexTypoProbability"] as? Double { config.telexTypoProbability = n }
     if let n = json["autoCorrectTypos"] as? Bool { config.autoCorrectTypos = n }
     if let n = json["findReplaceOpenSeconds"] as? Double { config.findReplaceOpenSeconds = n }
     if let n = json["findReplaceStepSeconds"] as? Double { config.findReplaceStepSeconds = n }
@@ -134,7 +136,8 @@ private func loadSettings(into config: inout Config) {
           config.historyMaxCharacters >= config.historyMinCharacters, config.waitBeforeHistory >= 0,
           config.historyViewTime >= 0, config.waitAfterHistory >= 0, config.typoMinCharacters >= 1,
           config.typoMaxCharacters >= config.typoMinCharacters, config.typosMinPerHistory >= 0,
-          config.typosMaxPerHistory >= config.typosMinPerHistory, config.findReplaceOpenSeconds >= 0.2,
+          config.typosMaxPerHistory >= config.typosMinPerHistory, config.telexTypoProbability >= 0,
+          config.telexTypoProbability <= 1, config.findReplaceOpenSeconds >= 0.2,
           config.findReplaceStepSeconds >= 0.05, config.findReplaceApplySeconds >= 0.2 else {
         fail("một hoặc nhiều giá trị trong settings.json nằm ngoài phạm vi hợp lệ")
     }
@@ -324,6 +327,36 @@ private func typo(for character: Character, rng: inout RNG) -> Character? {
     var chosen = choices[rng.int(0...(choices.count - 1))]
     if character.isUppercase { chosen = Character(String(chosen).uppercased()) }
     return chosen
+}
+
+private let telexMisspellings: [Character: String] = [
+    "á": "as", "à": "af", "ả": "ar", "ã": "ax", "ạ": "aj",
+    "ă": "aw", "ắ": "aws", "ằ": "awf", "ẳ": "awr", "ẵ": "awx", "ặ": "awj",
+    "â": "aa", "ấ": "aas", "ầ": "aaf", "ẩ": "aar", "ẫ": "aax", "ậ": "aaj",
+    "é": "es", "è": "ef", "ẻ": "er", "ẽ": "ex", "ẹ": "ej",
+    "ê": "ee", "ế": "ees", "ề": "eef", "ể": "eer", "ễ": "eex", "ệ": "eej",
+    "í": "is", "ì": "if", "ỉ": "ir", "ĩ": "ix", "ị": "ij",
+    "ó": "os", "ò": "of", "ỏ": "or", "õ": "ox", "ọ": "oj",
+    "ô": "oo", "ố": "oos", "ồ": "oof", "ổ": "oor", "ỗ": "oox", "ộ": "ooj",
+    "ơ": "ow", "ớ": "ows", "ờ": "owf", "ở": "owr", "ỡ": "owx", "ợ": "owj",
+    "ú": "us", "ù": "uf", "ủ": "ur", "ũ": "ux", "ụ": "uj",
+    "ư": "uw", "ứ": "uws", "ừ": "uwf", "ử": "uwr", "ữ": "uwx", "ự": "uwj",
+    "ý": "ys", "ỳ": "yf", "ỷ": "yr", "ỹ": "yx", "ỵ": "yj"
+]
+
+private func telexTypo(for word: String) -> String? {
+    var result = ""
+    var changed = false
+    for character in word {
+        let lower = Character(String(character).lowercased())
+        guard let replacement = telexMisspellings[lower] else {
+            result.append(character)
+            continue
+        }
+        result += character.isUppercase ? replacement.uppercased() : replacement
+        changed = true
+    }
+    return changed ? result : nil
 }
 
 private func naturalDelay(after character: Character, base: Double, burst: Double, rng: inout RNG) -> Double {
@@ -739,7 +772,12 @@ func typeWord(_ word: String) {
     if config.errorRate > 0 && typosThisHistoryCycle < targetTyposThisHistoryCycle &&
        charactersSinceTypo >= rng.int(config.typoMinCharacters...config.typoMaxCharacters) {
         let chars = Array(word)
-        if let index = chars.indices.randomElement(using: &rng), let replacement = typo(for: chars[index], rng: &rng) {
+        if rng.unit() < config.telexTypoProbability, let telex = telexTypo(for: word) {
+            displayed = telex
+            correction = (wrong: displayed, correct: word)
+            typosThisHistoryCycle += 1
+            charactersSinceTypo = 0
+        } else if let index = chars.indices.randomElement(using: &rng), let replacement = typo(for: chars[index], rng: &rng) {
             var changed = chars
             changed[index] = replacement
             displayed = String(changed)
