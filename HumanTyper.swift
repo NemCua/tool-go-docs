@@ -55,7 +55,7 @@ private final class ProgressOverlay: NSObject {
         self.total = total
         self.estimateRemaining = estimateRemaining
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 370, height: 178),
+            contentRect: NSRect(x: 0, y: 0, width: 390, height: 200),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -63,6 +63,7 @@ private final class ProgressOverlay: NSObject {
         super.init()
         panel.isOpaque = false
         panel.backgroundColor = .clear
+        panel.appearance = NSAppearance(named: .darkAqua)
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.hidesOnDeactivate = false
@@ -73,7 +74,9 @@ private final class ProgressOverlay: NSObject {
         content.material = .hudWindow
         content.blendingMode = .behindWindow
         content.state = .active
+        content.appearance = NSAppearance(named: .darkAqua)
         content.wantsLayer = true
+        content.layer?.backgroundColor = NSColor(calibratedWhite: 0.055, alpha: 0.82).cgColor
         content.layer?.cornerRadius = 20
         content.layer?.masksToBounds = true
         content.layer?.borderWidth = 1
@@ -119,16 +122,16 @@ private final class ProgressOverlay: NSObject {
             eyebrowLabel.centerYAnchor.constraint(equalTo: accent.centerYAnchor),
             statusLabel.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 18),
             statusLabel.topAnchor.constraint(equalTo: accent.bottomAnchor, constant: 13),
-            statusLabel.trailingAnchor.constraint(lessThanOrEqualTo: timeLabel.leadingAnchor, constant: -12),
-            timeLabel.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -18),
-            timeLabel.centerYAnchor.constraint(equalTo: statusLabel.centerYAnchor),
-            timeLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 108),
-            detailLabel.leadingAnchor.constraint(equalTo: statusLabel.leadingAnchor),
-            detailLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 11),
-            detailLabel.trailingAnchor.constraint(equalTo: timeLabel.trailingAnchor),
-            progressTrack.leadingAnchor.constraint(equalTo: detailLabel.leadingAnchor),
-            progressTrack.trailingAnchor.constraint(equalTo: detailLabel.trailingAnchor),
-            progressTrack.topAnchor.constraint(equalTo: detailLabel.bottomAnchor, constant: 17),
+            statusLabel.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -18),
+            timeLabel.leadingAnchor.constraint(equalTo: statusLabel.leadingAnchor),
+            timeLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 9),
+            timeLabel.widthAnchor.constraint(equalToConstant: 122),
+            detailLabel.leadingAnchor.constraint(equalTo: timeLabel.trailingAnchor, constant: 14),
+            detailLabel.trailingAnchor.constraint(equalTo: statusLabel.trailingAnchor),
+            detailLabel.centerYAnchor.constraint(equalTo: timeLabel.centerYAnchor),
+            progressTrack.leadingAnchor.constraint(equalTo: statusLabel.leadingAnchor),
+            progressTrack.trailingAnchor.constraint(equalTo: statusLabel.trailingAnchor),
+            progressTrack.topAnchor.constraint(equalTo: timeLabel.bottomAnchor, constant: 17),
             progressTrack.heightAnchor.constraint(equalToConstant: 6),
             progressFill.leadingAnchor.constraint(equalTo: progressTrack.leadingAnchor),
             progressFill.topAnchor.constraint(equalTo: progressTrack.topAnchor),
@@ -169,7 +172,7 @@ private final class ProgressOverlay: NSObject {
         statusLabel.stringValue = status
         timeLabel.stringValue = "≈ \(format(seconds: estimateRemaining(typed)))"
         detailLabel.stringValue = "\(remaining) ký tự còn lại  •  \(Int((progress * 100).rounded()))% hoàn thành"
-        progressWidth.constant = 334 * progress
+        progressWidth.constant = 354 * progress
     }
 
     func close() { panel.orderOut(nil) }
