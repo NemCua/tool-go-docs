@@ -26,6 +26,7 @@ struct Config {
     var typoMaxCharacters = 160
     var typosMinPerHistory = 1
     var typosMaxPerHistory = 3
+    var autoCorrectTypos = false
     var findReplaceOpenSeconds = 1.5
     var findReplaceStepSeconds = 0.35
     var findReplaceApplySeconds = 1.5
@@ -124,6 +125,7 @@ private func loadSettings(into config: inout Config) {
     if let n = json["typoMaxCharacters"] as? Int { config.typoMaxCharacters = n }
     if let n = json["typosMinPerHistory"] as? Int { config.typosMinPerHistory = n }
     if let n = json["typosMaxPerHistory"] as? Int { config.typosMaxPerHistory = n }
+    if let n = json["autoCorrectTypos"] as? Bool { config.autoCorrectTypos = n }
     if let n = json["findReplaceOpenSeconds"] as? Double { config.findReplaceOpenSeconds = n }
     if let n = json["findReplaceStepSeconds"] as? Double { config.findReplaceStepSeconds = n }
     if let n = json["findReplaceApplySeconds"] as? Double { config.findReplaceApplySeconds = n }
@@ -714,7 +716,7 @@ func typeCharacter(_ character: Character) {
             print("Đang mở lịch sử phiên bản rồi quay lại…")
             visitGoogleDocsVersionHistory(viewTime: config.historyViewTime)
         }
-        if !stopRequested && !pendingCorrections.isEmpty {
+        if config.autoCorrectTypos && !stopRequested && !pendingCorrections.isEmpty {
             print("Đang mở Tìm và thay thế để sửa \(pendingCorrections.count) cụm…")
             applyPendingCorrections()
         }
@@ -796,7 +798,7 @@ documentLoop: for part in documentParts {
     }
 }
 
-if !stopRequested && !pendingCorrections.isEmpty {
+if config.autoCorrectTypos && !stopRequested && !pendingCorrections.isEmpty {
     print("\nĐang tìm và sửa \(pendingCorrections.count) cụm viết sai…")
     applyPendingCorrections()
 }
