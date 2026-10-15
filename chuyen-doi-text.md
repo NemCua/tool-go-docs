@@ -27,6 +27,7 @@ Bình | 22
 ```
 
 - `[[TABLE 3x2]]`: 3 hàng, 2 cột.
+- Khi ước tính thời gian, mỗi hàng cộng 1 giây và mỗi cột cộng 1 giây; bảng 3x2 cộng 5 giây.
 - Mỗi hàng phải có đúng số ô; ngăn cách ô bằng dấu `|`.
 - Không để thêm dấu `|` ở đầu/cuối hàng.
 - Không chèn dòng trống trong bảng.

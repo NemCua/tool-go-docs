@@ -902,14 +902,8 @@ for part in documentParts {
         break
     case .table(let rows, let columns, let cells):
         finalText += cells.joined()
-        // Tool Finder command plus row/column changes, positioning, tabs and
-        // the table-exit shortcut. These are the fixed waits used below.
-        let extraColumns = columns > 2 ? columns - 2 : (columns == 1 ? 1 : 0)
-        let extraRows = rows > 2 ? rows - 2 : (rows == 1 ? 1 : 0)
-        let commandSeconds = 1.05 + Double(extraColumns + extraRows) * 0.95
-        let positionSeconds = Double(max(0, rows - 2)) * 0.15 + 0.2
-        let cellNavigationSeconds = Double(max(0, cells.count - 1)) * 0.3
-        tableDurations.append(commandSeconds + positionSeconds + cellNavigationSeconds + 0.79)
+        // Every row costs 1 second and every column costs 1 second.
+        tableDurations.append(Double(rows + columns))
     }
 }
 let baseTypingSeconds = 60.0 / (config.wpm * 5)
