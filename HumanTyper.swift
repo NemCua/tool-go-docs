@@ -44,18 +44,21 @@ private final class ProgressOverlay: NSObject {
     private let statusLabel = NSTextField(labelWithString: "")
     private let timeLabel = NSTextField(labelWithString: "")
     private let detailLabel = NSTextField(labelWithString: "")
+    private let elapsedLabel = NSTextField(labelWithString: "Đã chạy 00:00")
     private let progressFill = NSView()
     private var progressWidth: NSLayoutConstraint!
     private let total: Int
     private let estimateRemaining: (Int) -> Double
     private var lastDraw = Date.distantPast
     private var lastStatus = ""
+    private var startedAt: Date?
+    private var elapsedTimer: Timer?
 
     init(total: Int, estimateRemaining: @escaping (Int) -> Double) {
         self.total = total
         self.estimateRemaining = estimateRemaining
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 390, height: 200),
+            contentRect: NSRect(x: 0, y: 0, width: 430, height: 220),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -76,7 +79,7 @@ private final class ProgressOverlay: NSObject {
         content.state = .active
         content.appearance = NSAppearance(named: .darkAqua)
         content.wantsLayer = true
-        content.layer?.backgroundColor = NSColor(calibratedWhite: 0.055, alpha: 0.82).cgColor
+        content.layer?.backgroundColor = NSColor(calibratedWhite: 0.018, alpha: 0.95).cgColor
         content.layer?.cornerRadius = 20
         content.layer?.masksToBounds = true
         content.layer?.borderWidth = 1
@@ -97,6 +100,8 @@ private final class ProgressOverlay: NSObject {
         timeLabel.alignment = .right
         detailLabel.font = .systemFont(ofSize: 12, weight: .medium)
         detailLabel.textColor = NSColor.white.withAlphaComponent(0.64)
+        elapsedLabel.font = .monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
+        elapsedLabel.textColor = NSColor.white.withAlphaComponent(0.82)
 
         let progressTrack = NSView()
         progressTrack.wantsLayer = true
@@ -106,7 +111,7 @@ private final class ProgressOverlay: NSObject {
         progressFill.layer?.backgroundColor = NSColor(calibratedRed: 0.22, green: 0.82, blue: 0.95, alpha: 1).cgColor
         progressFill.layer?.cornerRadius = 3
 
-        for view in [accent, eyebrowLabel, statusLabel, timeLabel, detailLabel, progressTrack] {
+        for view in [accent, eyebrowLabel, statusLabel, timeLabel, detailLabel, elapsedLabel, progressTrack] {
             view.translatesAutoresizingMaskIntoConstraints = false
             content.addSubview(view)
         }
@@ -125,13 +130,15 @@ private final class ProgressOverlay: NSObject {
             statusLabel.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -18),
             timeLabel.leadingAnchor.constraint(equalTo: statusLabel.leadingAnchor),
             timeLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 9),
-            timeLabel.widthAnchor.constraint(equalToConstant: 122),
+            timeLabel.widthAnchor.constraint(equalToConstant: 180),
             detailLabel.leadingAnchor.constraint(equalTo: timeLabel.trailingAnchor, constant: 14),
             detailLabel.trailingAnchor.constraint(equalTo: statusLabel.trailingAnchor),
             detailLabel.centerYAnchor.constraint(equalTo: timeLabel.centerYAnchor),
+            elapsedLabel.leadingAnchor.constraint(equalTo: statusLabel.leadingAnchor),
+            elapsedLabel.topAnchor.constraint(equalTo: timeLabel.bottomAnchor, constant: 10),
             progressTrack.leadingAnchor.constraint(equalTo: statusLabel.leadingAnchor),
             progressTrack.trailingAnchor.constraint(equalTo: statusLabel.trailingAnchor),
-            progressTrack.topAnchor.constraint(equalTo: timeLabel.bottomAnchor, constant: 17),
+            progressTrack.topAnchor.constraint(equalTo: elapsedLabel.bottomAnchor, constant: 14),
             progressTrack.heightAnchor.constraint(equalToConstant: 6),
             progressFill.leadingAnchor.constraint(equalTo: progressTrack.leadingAnchor),
             progressFill.topAnchor.constraint(equalTo: progressTrack.topAnchor),
@@ -170,12 +177,46 @@ private final class ProgressOverlay: NSObject {
         let remaining = max(0, total - typed)
         let progress = total == 0 ? 1 : min(1, max(0, Double(typed) / Double(total)))
         statusLabel.stringValue = status
-        timeLabel.stringValue = "≈ \(format(seconds: estimateRemaining(typed)))"
+        timeLabel.stringValue = "Còn ≈ \(format(seconds: estimateRemaining(typed)))"
         detailLabel.stringValue = "\(remaining) ký tự còn lại  •  \(Int((progress * 100).rounded()))% hoàn thành"
-        progressWidth.constant = 354 * progress
+        progressWidth.constant = 394 * progress
     }
 
-    func close() { panel.orderOut(nil) }
+    func startElapsed() {
+        elapsedTimer?.invalidate()
+        startedAt = Date()
+        updateElapsed()
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+            self?.updateElapsed()
+        }
+        elapsedTimer = timer
+        RunLoop.current.add(timer, forMode: .common)
+    }
+
+    @discardableResult
+    func finish(typed: Int) -> Double {
+        elapsedTimer?.invalidate()
+        elapsedTimer = nil
+        let elapsed = startedAt.map { Date().timeIntervalSince($0) } ?? 0
+        statusLabel.stringValue = "Hoàn tất"
+        timeLabel.stringValue = "Tổng \(format(seconds: elapsed))"
+        elapsedLabel.stringValue = "Thời gian thực từ lúc bắt đầu gõ"
+        detailLabel.stringValue = "0 ký tự còn lại  •  100% hoàn thành"
+        progressWidth.constant = 394
+        return elapsed
+    }
+
+    func close() {
+        elapsedTimer?.invalidate()
+        elapsedTimer = nil
+        panel.orderOut(nil)
+    }
+
+    private func updateElapsed() {
+        let elapsed = startedAt.map { Date().timeIntervalSince($0) } ?? 0
+        elapsedLabel.stringValue = "Đã chạy \(format(seconds: elapsed))"
+    }
+
     private func format(seconds: Double) -> String {
         let rounded = max(0, Int(seconds.rounded()))
         return String(format: "%02d:%02d", rounded / 60, rounded % 60)
@@ -1012,6 +1053,7 @@ if config.countdown > 0 {
     }
     print(String(repeating: " ", count: 32), terminator: "\r")
 }
+progressOverlay?.startElapsed()
 
 var rng = RNG(seed: config.seed ?? UInt64(Date().timeIntervalSince1970 * 1_000_000))
 let baseDelay = 60.0 / (config.wpm * 5.0)
@@ -1224,5 +1266,7 @@ if stopRequested {
     print("\nĐã dừng an toàn sau \(typed)/\(textCharacterCount) ký tự.")
     exit(130)
 }
+let elapsed = progressOverlay?.finish(typed: typed) ?? 0
+print("\nHoàn tất: đã gõ \(typed) ký tự trong \(String(format: "%.1f", elapsed)) giây.")
+pumpEvents(for: 4)
 progressOverlay?.close()
-print("\nHoàn tất: đã gõ \(typed) ký tự.")
