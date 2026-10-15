@@ -82,6 +82,8 @@ npm run web
 
 Mở `http://localhost:4173`, chỉnh số/toggle và bấm **Sao chép settings.json**. Dán JSON đó vào `settings.json` trước khi chạy công cụ.
 
+Trang **Preview tài liệu** trên thanh đầu trang cho phép nạp hoặc dán file `.txt`, rồi mô phỏng nội dung cuối cùng trên một khung giấy: directive `[sai, đúng]`, `{save}`, bảng và các lệnh LaTex phổ biến. Preview không gửi phím hoặc thay đổi Google Docs.
+
 
 ## Kiểm tra mà không gửi phím
 

@@ -103,3 +103,7 @@ Không dùng công thức LaTex quá phức tạp, macro tự định nghĩa, �
 ```sh
 ./run.sh ten-file
 ```
+
+## 7. Preview trước khi gõ
+
+Chạy `npm run web`, mở `http://localhost:4173` rồi chọn **Preview tài liệu**. Nạp file `.txt` hoặc dán trực tiếp nội dung để xem bản mô phỏng dạng trang giấy. Preview hỗ trợ directive, bảng và các phép chuyển LaTex cơ bản; đây là kiểm tra trước khi chạy, không thay thế kiểm tra Google Docs thật.
