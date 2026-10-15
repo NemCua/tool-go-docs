@@ -40,6 +40,7 @@ sealed class ProgressOverlay : IDisposable {
         form.Controls.AddRange(new Control[] { status, remaining, elapsed, detail, bar });
         status.SetBounds(22, 18, 350, 22); remaining.SetBounds(22, 48, 390, 34); elapsed.SetBounds(22, 91, 200, 22); detail.SetBounds(22, 118, 390, 22); bar.SetBounds(22, 154, 386, 7);
         form.CreateControl();
+        _ = form.Handle;
         var timer = new System.Windows.Forms.Timer { Interval = 1000 };
         timer.Tick += (_, _) => { if (!form.IsDisposed && started != default) elapsed!.Text = $"Đã chạy {Format(DateTime.Now - started)}"; };
         timer.Start();
