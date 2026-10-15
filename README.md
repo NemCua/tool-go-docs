@@ -113,7 +113,7 @@ Xây dựng `[tap, tập]` từ vựng {save} theo thứ tự.
 ```
 
 - `` `[sai, đúng]` ``: gõ phần `sai`, chạy luồng lưu/sửa hiện tại, Backspace toàn cụm rồi gõ phần `đúng`. Backtick là tuỳ chọn.
-- `{save}`: lưu lịch sử ngay tại vị trí directive, không tạo lỗi hoặc sửa nội dung.
+- `` `{save}` ``: lưu lịch sử ngay tại vị trí directive, không tạo lỗi hoặc sửa nội dung. Backtick là tuỳ chọn.
 
 Dùng cú pháp sau trong file `.txt`:
 

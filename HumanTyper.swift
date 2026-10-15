@@ -404,7 +404,9 @@ enum DocumentPart {
 }
 
 private func expandDirectives(_ parts: [DocumentPart]) -> [DocumentPart] {
-    let pattern = #"`?\[([^,\]\n]+),\s*([^\]\n]+)\]`?|\{save\}"#
+    // Directives may be wrapped in Markdown backticks (or escaped backticks)
+    // without those wrapper characters being typed into the document.
+    let pattern = #"(?:\\?`)?\[([^,\]\n]+),\s*([^\]\n]+)\](?:\\?`)?|(?:\\?`)?\{save\}(?:\\?`)?"#
     let regex = try! NSRegularExpression(pattern: pattern)
     var output: [DocumentPart] = []
     for part in parts {
