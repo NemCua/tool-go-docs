@@ -587,13 +587,13 @@ private func parseDocument(_ content: String) -> [DocumentPart] {
     return parts
 }
 
-private func runGoogleDocsCommand(_ command: String, settleTime: Double = 0.65) {
+private func runGoogleDocsCommand(_ command: String, settleTime: Double = 0.35) {
     // Option + / opens Google Docs Tool Finder on macOS. Its first result is
     // highlighted automatically, so Enter runs it without an extra Down key.
     postShortcut(code: 44, flags: .maskAlternate)
-    pumpEvents(for: config.plainTypingOnly ? 0.25 : 0.55)
+    pumpEvents(for: 0.25)
     postText(command)
-    pumpEvents(for: config.plainTypingOnly ? 0.35 : 0.75)
+    pumpEvents(for: 0.35)
     postKey(code: 36)
     pumpEvents(for: settleTime)
 }
@@ -622,7 +622,7 @@ private func createGoogleDocsTable(rows: Int, columns: Int, positionAtStart: Boo
     // In Google Docs, the Tool Finder command creates a 2x2 table immediately;
     // it does not open the table-size grid. The caret remains in the first cell,
     // so resize from there using table commands before typing cell contents.
-    runGoogleDocsCommand("Chèn bảng", settleTime: config.plainTypingOnly ? 0.45 : 0.9)
+    runGoogleDocsCommand("Chèn bảng", settleTime: 0.45)
 
     if columns > 2 {
         for _ in 2..<columns { runGoogleDocsCommand("Chèn cột bên phải") }
@@ -642,10 +642,10 @@ private func createGoogleDocsTable(rows: Int, columns: Int, positionAtStart: Boo
     if positionAtStart && rows > 2 {
         for _ in 0..<(rows - 2) {
             postKey(code: 126) // Up
-            pumpEvents(for: config.plainTypingOnly ? 0.15 : 0.3)
+            pumpEvents(for: 0.15)
         }
     }
-    pumpEvents(for: config.plainTypingOnly ? 0.2 : 0.45)
+    pumpEvents(for: 0.2)
 }
 
 let config = parseArguments()
