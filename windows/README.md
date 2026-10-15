@@ -2,6 +2,8 @@
 
 Yêu cầu Windows 10/11 và .NET 8 SDK khi chạy từ source.
 
+Xem checklist đầy đủ về máy cloud, quyền, trình duyệt, Google Docs, Version history và đóng gói tại [REQUIREMENTS.md](REQUIREMENTS.md).
+
 ## Chạy
 
 Mở PowerShell tại thư mục gốc dự án:

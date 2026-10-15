@@ -44,7 +44,9 @@ static class Native {
             throw new InvalidOperationException("Windows SendInput thất bại. Kiểm tra quyền của ứng dụng đích.");
     }
     static void Key(ushort key, bool up = false) => Send(new INPUT { type = Keyboard, data = new INPUTUNION { keyboard = new KEYBDINPUT { virtualKey = key, flags = up ? KeyUp : 0 } } });
-    public static void Press(ushort key) { Key(key); Key(key, true); }
+    // Google Docs may drop a virtual key when down/up are emitted in the same
+    // scheduler slice. Keep a short real key press, especially for Backspace.
+    public static void Press(ushort key) { Key(key); Thread.Sleep(18); Key(key, true); Thread.Sleep(12); }
     public static void Shortcut(ushort key, params ushort[] modifiers) {
         foreach (var modifier in modifiers) Key(modifier);
         Press(key);
@@ -178,9 +180,13 @@ class Program {
         overlay?.SetStatus("Đang xử lý lỗi");
         TypeRaw(wrong);
         var saveFirst = Rng.NextDouble() < settings.SaveBeforeCorrectionProbability;
-        if (saveFirst) VisitHistory(false);
-        for (var index = 0; index < TextElementCount(wrong); index++) { Native.Press(Native.Backspace); Sleep(.035); }
-        if (!saveFirst) VisitHistory(false);
+        if (saveFirst && settings.HistoryEnabled) VisitHistory(false);
+        // Give Docs time to leave the history view and commit the wrong text
+        // before a sequence of Backspace virtual-key events.
+        Sleep(.18);
+        for (var index = 0; index < TextElementCount(wrong); index++) { Native.Press(Native.Backspace); Sleep(.065); }
+        Sleep(.18);
+        if (!saveFirst && settings.HistoryEnabled) VisitHistory(false);
         TypeRaw(correct);
         overlay?.SetStatus("Đang gõ");
     }

@@ -123,4 +123,6 @@ dotnet run --project windows -- ten-file --dry-run
 
 Bản Windows dùng cùng `settings.json` và cú pháp input với macOS, gồm Unicode/emoji, lỗi rồi sửa, lịch sử, directive, LaTeX, bảng, dry-run và panel tiến độ không lấy focus. Windows dùng `Ctrl`, `Alt`, `Shift` thay cho phím macOS. Tạo bảng hiện yêu cầu giao diện Google Docs tiếng Việt. Cách chạy và đóng gói `win-x64`/`win-arm64` xem tại [windows/README.md](windows/README.md).
 
+Các yêu cầu môi trường Windows/cloud (SDK hoặc bản self-contained, desktop tương tác, quyền ứng dụng, Version history, trình duyệt và mạng) nằm tại [windows/REQUIREMENTS.md](windows/REQUIREMENTS.md).
+
 Khi thay đổi cú pháp hoặc hành vi, cập nhật đồng thời README này và [chuyen-doi-text.md](chuyen-doi-text.md).
