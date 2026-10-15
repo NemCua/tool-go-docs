@@ -21,6 +21,15 @@ struct Config {
     var waitBeforeHistory = 5.0
     var historyViewTime = 5.0
     var waitAfterHistory = 5.0
+    var typoMinCharacters = 80
+    var typoMaxCharacters = 160
+    var typosMinPerHistory = 1
+    var typosMaxPerHistory = 3
+    var telexTypoProbability = 0.75
+    var historyBeforeCorrectionProbability = 0.5
+    var typoPhraseMinWords = 1
+    var typoPhraseMaxWords = 3
+    var naturalRhythm = true
     var seed: UInt64?
 }
 
@@ -102,20 +111,34 @@ private func loadSettings(into config: inout Config) {
     guard let data = try? Data(contentsOf: url), let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
         fail("settings.json không phải JSON hợp lệ")
     }
-    if let n = json["wpm"] as? Double { config.wpm = n }
-    if let n = json["errorRatePercent"] as? Double { config.errorRate = n / 100 }
-    if let n = json["countdownSeconds"] as? Int { config.countdown = n }
-    if let n = json["intentionalTypos"] as? Bool, !n { config.errorRate = 0 }
-    if let n = json["historyEnabled"] as? Bool { config.visitHistoryDuringPauses = n }
-    if let n = json["historyMinCharacters"] as? Int { config.historyMinCharacters = n }
-    if let n = json["historyMaxCharacters"] as? Int { config.historyMaxCharacters = n }
-    if let n = json["waitBeforeHistorySeconds"] as? Double { config.waitBeforeHistory = n }
-    if let n = json["historyViewSeconds"] as? Double { config.historyViewTime = n }
-    if let n = json["waitAfterHistorySeconds"] as? Double { config.waitAfterHistory = n }
-    guard config.wpm >= 5, config.wpm <= 300, config.errorRate >= 0, config.errorRate <= 0.3,
+    if let n = json["tocDoTuMoiPhut"] as? Double { config.wpm = n }
+    if let n = json["tyLeLoiPhanTram"] as? Double { config.errorRate = n / 100 }
+    if let n = json["demNguocGiay"] as? Int { config.countdown = n }
+    if let n = json["batLoiCoY"] as? Bool, !n { config.errorRate = 0 }
+    if let n = json["batLuuLichSu"] as? Bool { config.visitHistoryDuringPauses = n }
+    if let n = json["soKyTuLuuToiThieu"] as? Int { config.historyMinCharacters = n }
+    if let n = json["soKyTuLuuToiDa"] as? Int { config.historyMaxCharacters = n }
+    if let n = json["choTruocLuuGiay"] as? Double { config.waitBeforeHistory = n }
+    if let n = json["xemLuuLichSuGiay"] as? Double { config.historyViewTime = n }
+    if let n = json["choSauLuuGiay"] as? Double { config.waitAfterHistory = n }
+    if let n = json["khoangKyTuLoiToiThieu"] as? Int { config.typoMinCharacters = n }
+    if let n = json["khoangKyTuLoiToiDa"] as? Int { config.typoMaxCharacters = n }
+    if let n = json["soLoiMoiDotToiThieu"] as? Int { config.typosMinPerHistory = n }
+    if let n = json["soLoiMoiDotToiDa"] as? Int { config.typosMaxPerHistory = n }
+    if let n = json["xacSuatLoiTelex"] as? Double { config.telexTypoProbability = n }
+    if let n = json["xacSuatLuuTruocKhiSua"] as? Double { config.historyBeforeCorrectionProbability = n }
+    if let n = json["soTuCumSaiToiThieu"] as? Int { config.typoPhraseMinWords = n }
+    if let n = json["soTuCumSaiToiDa"] as? Int { config.typoPhraseMaxWords = n }
+    if let n = json["batNhipTuNhien"] as? Bool { config.naturalRhythm = n }
+    guard config.wpm >= 5, config.wpm <= 1000, config.errorRate >= 0, config.errorRate <= 0.3,
           config.countdown >= 0, config.countdown <= 60, config.historyMinCharacters >= 1,
           config.historyMaxCharacters >= config.historyMinCharacters, config.waitBeforeHistory >= 0,
-          config.historyViewTime >= 0, config.waitAfterHistory >= 0 else {
+          config.historyViewTime >= 0, config.waitAfterHistory >= 0, config.typoMinCharacters >= 1,
+          config.typoMaxCharacters >= config.typoMinCharacters, config.typosMinPerHistory >= 0,
+          config.typosMaxPerHistory >= config.typosMinPerHistory, config.telexTypoProbability >= 0,
+          config.telexTypoProbability <= 1, config.historyBeforeCorrectionProbability >= 0,
+          config.historyBeforeCorrectionProbability <= 1, config.typoPhraseMinWords >= 1,
+          config.typoPhraseMaxWords >= config.typoPhraseMinWords else {
         fail("một hoặc nhiều giá trị trong settings.json nằm ngoài phạm vi hợp lệ")
     }
 }
@@ -141,7 +164,7 @@ private func parseArguments() -> Config {
             let value = args[i]
             switch arg {
             case "--wpm":
-                guard let n = Double(value), n >= 5, n <= 300 else { fail("--wpm phải từ 5 đến 300") }
+                guard let n = Double(value), n >= 5, n <= 1000 else { fail("--wpm phải từ 5 đến 1000") }
                 config.wpm = n
             case "--error-rate":
                 guard let n = Double(value), n >= 0, n <= 30 else { fail("--error-rate phải từ 0 đến 30") }
@@ -306,6 +329,63 @@ private func typo(for character: Character, rng: inout RNG) -> Character? {
     return chosen
 }
 
+private let telexMisspellings: [Character: String] = [
+    "á": "as", "à": "af", "ả": "ar", "ã": "ax", "ạ": "aj",
+    "ă": "aw", "ắ": "aws", "ằ": "awf", "ẳ": "awr", "ẵ": "awx", "ặ": "awj",
+    "â": "aa", "ấ": "aas", "ầ": "aaf", "ẩ": "aar", "ẫ": "aax", "ậ": "aaj",
+    "é": "es", "è": "ef", "ẻ": "er", "ẽ": "ex", "ẹ": "ej",
+    "ê": "ee", "ế": "ees", "ề": "eef", "ể": "eer", "ễ": "eex", "ệ": "eej",
+    "í": "is", "ì": "if", "ỉ": "ir", "ĩ": "ix", "ị": "ij",
+    "ó": "os", "ò": "of", "ỏ": "or", "õ": "ox", "ọ": "oj",
+    "ô": "oo", "ố": "oos", "ồ": "oof", "ổ": "oor", "ỗ": "oox", "ộ": "ooj",
+    "ơ": "ow", "ớ": "ows", "ờ": "owf", "ở": "owr", "ỡ": "owx", "ợ": "owj",
+    "ú": "us", "ù": "uf", "ủ": "ur", "ũ": "ux", "ụ": "uj",
+    "ư": "uw", "ứ": "uws", "ừ": "uwf", "ử": "uwr", "ữ": "uwx", "ự": "uwj",
+    "ý": "ys", "ỳ": "yf", "ỷ": "yr", "ỹ": "yx", "ỵ": "yj"
+]
+
+private func telexTypo(for word: String) -> String? {
+    var result = ""
+    var changed = false
+    for character in word {
+        let lower = Character(String(character).lowercased())
+        guard let replacement = telexMisspellings[lower] else {
+            result.append(character)
+            continue
+        }
+        result += character.isUppercase ? replacement.uppercased() : replacement
+        changed = true
+    }
+    return changed ? result : nil
+}
+
+private func randomWordTypo(for word: String, rng: inout RNG, telexProbability: Double) -> String? {
+    let chars = Array(word)
+    guard !chars.isEmpty else { return nil }
+    if rng.unit() < telexProbability, let telex = telexTypo(for: word) { return telex }
+    switch rng.int(0...3) {
+    case 0: // Repeat a character: "text" -> "teext".
+        let index = rng.int(0...(chars.count - 1))
+        var changed = chars
+        changed.insert(chars[index], at: index)
+        return String(changed)
+    case 1 where chars.count > 2: // Omit a character.
+        var changed = chars
+        changed.remove(at: rng.int(0...(chars.count - 1)))
+        return String(changed)
+    case 2 where chars.count > 2: // Swap adjacent characters.
+        var changed = chars
+        let index = rng.int(0...(chars.count - 2))
+        changed.swapAt(index, index + 1)
+        return String(changed)
+    default: // Hit a neighbouring keyboard key.
+        guard let index = chars.indices.randomElement(using: &rng), let replacement = typo(for: chars[index], rng: &rng) else { return nil }
+        var changed = chars
+        changed[index] = replacement
+        return String(changed)
+    }
+}
+
 private func naturalDelay(after character: Character, base: Double, burst: Double, rng: inout RNG) -> Double {
     var delay = base * burst * rng.between(0.58, 1.48)
     if character == " " { delay += rng.between(0.015, 0.09) }
@@ -319,6 +399,36 @@ private func naturalDelay(after character: Character, base: Double, burst: Doubl
 enum DocumentPart {
     case text(String)
     case table(rows: Int, columns: Int, cells: [String])
+    case manualCorrection(wrong: String, correct: String)
+    case save
+}
+
+private func expandDirectives(_ parts: [DocumentPart]) -> [DocumentPart] {
+    // Directives may be wrapped in Markdown backticks (or escaped backticks)
+    // without those wrapper characters being typed into the document.
+    let pattern = #"(?:\\?`)?\[([^,\]\n]+),\s*([^\]\n]+)\](?:\\?`)?|(?:\\?`)?\{save\}(?:\\?`)?"#
+    let regex = try! NSRegularExpression(pattern: pattern)
+    var output: [DocumentPart] = []
+    for part in parts {
+        guard case .text(let text) = part else { output.append(part); continue }
+        let matches = regex.matches(in: text, range: NSRange(text.startIndex..., in: text))
+        var cursor = text.startIndex
+        for match in matches {
+            guard let whole = Range(match.range, in: text) else { continue }
+            if cursor < whole.lowerBound { output.append(.text(String(text[cursor..<whole.lowerBound]))) }
+            if match.range(at: 1).location != NSNotFound,
+               let wrongRange = Range(match.range(at: 1), in: text),
+               let correctRange = Range(match.range(at: 2), in: text) {
+                output.append(.manualCorrection(wrong: String(text[wrongRange]).trimmingCharacters(in: .whitespaces),
+                                                correct: String(text[correctRange]).trimmingCharacters(in: .whitespaces)))
+            } else {
+                output.append(.save)
+            }
+            cursor = whole.upperBound
+        }
+        if cursor < text.endIndex { output.append(.text(String(text[cursor...]))) }
+    }
+    return output
 }
 
 private func convertMathBody(_ body: String) -> String {
@@ -358,6 +468,17 @@ private func convertMathBody(_ body: String) -> String {
         result.replaceSubrange(fraction.lowerBound..<denominator.1, with: "(\(numerator.0))/(\(denominator.0))")
     }
 
+    // Boxed math is a visual LaTex wrapper. Google Docs plain typing should
+    // receive only its contents: \boxed{v(D)} -> v(D).
+    while let boxed = result.range(of: #"\boxed"#) {
+        var contentStart = boxed.upperBound
+        while contentStart < result.endIndex && result[contentStart].isWhitespace {
+            contentStart = result.index(after: contentStart)
+        }
+        guard let content = bracedGroup(in: result, from: contentStart) else { break }
+        result.replaceSubrange(boxed.lowerBound..<content.1, with: content.0)
+    }
+
     // Also accept TeX's compact single-token form: \frac14 -> 1/4.
     let compactFraction = try! NSRegularExpression(pattern: #"\\frac\s*([A-Za-z0-9])\s*([A-Za-z0-9])"#)
     result = compactFraction.stringByReplacingMatches(
@@ -393,7 +514,8 @@ private func convertMathBody(_ body: String) -> String {
     }
 
     let replacements: [(String, String)] = [
-        (#"\leftrightarrow"#, "↔"), (#"\rightarrow"#, "→"), (#"\leftarrow"#, "←"),
+        (#"\leftrightarrow"#, "↔"), (#"\Rightarrow"#, "→"), (#"\Leftarrow"#, "←"),
+        (#"\rightarrow"#, "→"), (#"\leftarrow"#, "←"),
         (#"\subseteq"#, "⊆"), (#"\supseteq"#, "⊇"), (#"\langle"#, "⟨"),
         (#"\rangle"#, "⟩"), (#"\notin"#, "∉"), (#"\infty"#, "∞"),
         (#"\forall"#, "∀"), (#"\exists"#, "∃"), (#"\times"#, "×"),
@@ -401,6 +523,7 @@ private func convertMathBody(_ body: String) -> String {
         (#"\geq"#, "≥"), (#"\le"#, "≤"), (#"\ge"#, "≥"),
         (#"\in"#, "∈"), (#"\cup"#, "∪"), (#"\cap"#, "∩"),
         (#"\to"#, "→"), (#"\mid"#, " | "), (#"\ln"#, "ln"),
+        (#"\;"#, ""), (#"\,"#, ""), (#"\!"#, ""), (#"\ "#, ""),
         (#"\{"#, "{"), (#"\}"#, "}"), ("{,}", ","),
         ("_0", "₀"), ("_1", "₁"), ("_2", "₂"), ("_3", "₃"),
         ("_4", "₄"), ("_5", "₅"), ("_6", "₆"), ("_7", "₇"),
@@ -489,16 +612,16 @@ private func parseDocument(_ content: String) -> [DocumentPart] {
         index += 1
     }
     if !plain.isEmpty { parts.append(.text(plain)) }
-    return parts
+    return expandDirectives(parts)
 }
 
-private func runGoogleDocsCommand(_ command: String, settleTime: Double = 0.65) {
+private func runGoogleDocsCommand(_ command: String, settleTime: Double = 0.35) {
     // Option + / opens Google Docs Tool Finder on macOS. Its first result is
     // highlighted automatically, so Enter runs it without an extra Down key.
     postShortcut(code: 44, flags: .maskAlternate)
-    pumpEvents(for: 0.55)
+    pumpEvents(for: 0.25)
     postText(command)
-    pumpEvents(for: 0.75)
+    pumpEvents(for: 0.35)
     postKey(code: 36)
     pumpEvents(for: settleTime)
 }
@@ -527,7 +650,7 @@ private func createGoogleDocsTable(rows: Int, columns: Int, positionAtStart: Boo
     // In Google Docs, the Tool Finder command creates a 2x2 table immediately;
     // it does not open the table-size grid. The caret remains in the first cell,
     // so resize from there using table commands before typing cell contents.
-    runGoogleDocsCommand("Chèn bảng", settleTime: 0.9)
+    runGoogleDocsCommand("Chèn bảng", settleTime: 0.45)
 
     if columns > 2 {
         for _ in 2..<columns { runGoogleDocsCommand("Chèn cột bên phải") }
@@ -547,10 +670,10 @@ private func createGoogleDocsTable(rows: Int, columns: Int, positionAtStart: Boo
     if positionAtStart && rows > 2 {
         for _ in 0..<(rows - 2) {
             postKey(code: 126) // Up
-            pumpEvents(for: 0.3)
+            pumpEvents(for: 0.15)
         }
     }
-    pumpEvents(for: 0.45)
+    pumpEvents(for: 0.2)
 }
 
 let config = parseArguments()
@@ -564,6 +687,8 @@ let textCharacterCount = documentParts.reduce(0) { total, part in
     switch part {
     case .text(let text): return total + text.count
     case .table(_, _, let cells): return total + cells.reduce(0) { $0 + $1.count }
+    case .manualCorrection(_, let correct): return total + correct.count
+    case .save: return total
     }
 }
 let tableCount = documentParts.reduce(0) { total, part in
@@ -608,28 +733,28 @@ var typed = 0
 var typedSinceLongPause = 0
 var nextLongPauseAt = rng.int(config.historyMinCharacters...config.historyMaxCharacters)
 var longPauseCount = 0
+var charactersSinceTypo = 0
+var typosThisHistoryCycle = 0
+var targetTyposThisHistoryCycle = rng.int(config.typosMinPerHistory...config.typosMaxPerHistory)
 
-let typeString: (String) -> Void = { text in
-  for character in text {
+func typeCharacter(_ character: Character) {
     if stopRequested { return }
 
-    if untilBurstChange == 0 {
+    if config.naturalRhythm && untilBurstChange == 0 {
         burstFactor = rng.between(0.72, 1.32)
         untilBurstChange = rng.int(3...12)
     }
-    untilBurstChange -= 1
-
-    if rng.unit() < config.errorRate, let wrong = typo(for: character, rng: &rng) {
-        postText(String(wrong))
-        pumpEvents(for: rng.between(baseDelay * 0.8, baseDelay * 2.2))
-        postKey(code: 51)
-        pumpEvents(for: rng.between(baseDelay * 0.55, baseDelay * 1.5))
-    }
+    if config.naturalRhythm { untilBurstChange -= 1 }
 
     postText(String(character))
     typed += 1
     typedSinceLongPause += 1
-    pumpEvents(for: naturalDelay(after: character, base: baseDelay, burst: burstFactor, rng: &rng))
+    // Plain mode is deliberately constant: no punctuation pauses, bursts, or
+    // random breaks—only the delay required by the selected WPM.
+    let delay = !config.naturalRhythm
+        ? baseDelay
+        : naturalDelay(after: character, base: baseDelay, burst: burstFactor, rng: &rng)
+    pumpEvents(for: delay)
 
     if config.longPauses && config.visitHistoryDuringPauses && typedSinceLongPause >= nextLongPauseAt && !stopRequested {
         longPauseCount += 1
@@ -645,8 +770,102 @@ let typeString: (String) -> Void = { text in
         }
         typedSinceLongPause = 0
         nextLongPauseAt = rng.int(config.historyMinCharacters...config.historyMaxCharacters)
+        typosThisHistoryCycle = 0
+        targetTyposThisHistoryCycle = rng.int(config.typosMinPerHistory...config.typosMaxPerHistory)
+        charactersSinceTypo = 0
     }
-  }
+}
+
+func correctPhrase(wrong: String, correct: String) {
+    guard !stopRequested else { return }
+
+    // Randomize whether the history pause happens before or after correction.
+    let saveBeforeCorrection = rng.unit() < config.historyBeforeCorrectionProbability
+    if saveBeforeCorrection {
+        print("\nĐang lưu phiên bản trước khi sửa ‘\(wrong)’…")
+        pumpEvents(for: config.waitBeforeHistory)
+        if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
+        if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
+    }
+    guard !stopRequested else { return }
+
+    for _ in wrong {
+        postKey(code: 51) // Backspace
+        pumpEvents(for: rng.between(baseDelay * 0.55, baseDelay * 1.2))
+    }
+    for character in correct {
+        postText(String(character))
+        pumpEvents(for: naturalDelay(after: character, base: baseDelay, burst: burstFactor, rng: &rng))
+    }
+    if !stopRequested && !saveBeforeCorrection {
+        print("\nĐang lưu phiên bản sau khi sửa ‘\(correct)’…")
+        pumpEvents(for: config.waitBeforeHistory)
+        if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
+        if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
+    }
+}
+
+func typeString(_ text: String) {
+    var tokens: [(value: String, isWord: Bool)] = []
+    var buffer = ""
+    var bufferIsWord: Bool?
+    for character in text {
+        let isWord = !character.isWhitespace
+        if let current = bufferIsWord, current != isWord {
+            tokens.append((buffer, current))
+            buffer = ""
+        }
+        bufferIsWord = isWord
+        buffer.append(character)
+    }
+    if let current = bufferIsWord { tokens.append((buffer, current)) }
+
+    var index = 0
+    while index < tokens.count && !stopRequested {
+        guard tokens[index].isWord else {
+            for character in tokens[index].value { typeCharacter(character) }
+            index += 1
+            continue
+        }
+        let shouldMistype = config.errorRate > 0 && typosThisHistoryCycle < targetTyposThisHistoryCycle &&
+            charactersSinceTypo >= rng.int(config.typoMinCharacters...config.typoMaxCharacters)
+        guard shouldMistype else {
+            for character in tokens[index].value { typeCharacter(character) }
+            charactersSinceTypo += tokens[index].value.count
+            index += 1
+            continue
+        }
+        let targetWords = rng.int(config.typoPhraseMinWords...config.typoPhraseMaxWords)
+        var end = index
+        var wordCount = 0
+        var correct = ""
+        var wrong = ""
+        while end < tokens.count && wordCount < targetWords {
+            let token = tokens[end]
+            correct += token.value
+            if token.isWord {
+                wrong += randomWordTypo(for: token.value, rng: &rng, telexProbability: config.telexTypoProbability) ?? token.value
+                wordCount += 1
+            } else {
+                wrong += token.value
+            }
+            end += 1
+        }
+        if wrong != correct {
+            for character in wrong { typeCharacter(character) }
+            typosThisHistoryCycle += 1
+            charactersSinceTypo = 0
+            correctPhrase(wrong: wrong, correct: correct)
+        } else {
+            for character in correct { typeCharacter(character) }
+        }
+        charactersSinceTypo += correct.count
+        index = end
+    }
+}
+
+func typeLiteral(_ text: String) {
+    for character in text where !stopRequested { typeCharacter(character) }
 }
 
 documentLoop: for part in documentParts {
@@ -654,6 +873,15 @@ documentLoop: for part in documentParts {
     switch part {
     case .text(let text):
         typeString(text)
+    case .manualCorrection(let wrong, let correct):
+        print("\nĐang xử lý lỗi thủ công ‘\(wrong)’ → ‘\(correct)’…")
+        typeLiteral(wrong)
+        correctPhrase(wrong: wrong, correct: correct)
+    case .save:
+        print("\nĐang lưu lịch sử theo directive {save}…")
+        pumpEvents(for: config.waitBeforeHistory)
+        if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
+        if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
     case .table(let rows, let columns, let cells):
         print("\nĐang tạo bảng \(rows)x\(columns)…")
         createGoogleDocsTable(rows: rows, columns: columns, positionAtStart: !config.tableOnly)

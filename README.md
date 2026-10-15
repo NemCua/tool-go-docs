@@ -47,7 +47,41 @@ Nếu không truyền tên, thư mục phải chứa đúng một file `.txt`.
 
 ## Cấu hình
 
-Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ngược, lỗi gõ và chu kỳ lịch sử. Các trường `intentionalTypos` và `historyEnabled` nhận `true` hoặc `false` để bật/tắt tính năng.
+Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ngược, lỗi gõ và chu kỳ lịch sử. Toàn bộ khóa dùng tiếng Việt camelCase. `khoangKyTuLoiToiThieu`/`khoangKyTuLoiToiDa` là khoảng ký tự giữa các lỗi; `soLoiMoiDotToiThieu`/`soLoiMoiDotToiDa` là số lỗi ngẫu nhiên trong một đợt. `xacSuatLuuTruocKhiSua: 0.5` nghĩa là 50% lưu lịch sử trước khi sửa, 50% sửa trước rồi mới lưu.
+
+`xacSuatLoiTelex` (0–1, mặc định `0.75`) xác định xác suất dùng lỗi Telex cho từ tiếng Việt có dấu, chẳng hạn `chữ` thành `chuwx` và `này` thành `nayf`. Các lỗi còn lại được chọn ngẫu nhiên giữa lặp ký tự, thiếu ký tự, đảo hai ký tự kề nhau và phím gần nhau.
+
+Quy ước dự án: mọi thay đổi cú pháp hoặc hành vi công cụ phải cập nhật đồng thời README này và [chuyen-doi-text.md](chuyen-doi-text.md).
+
+`soTuCumSaiToiThieu` và `soTuCumSaiToiDa` đặt số từ trong một cụm sai. Ví dụ đặt `2` và `3` có thể tạo `chuwx nayf` trước khi xóa cả cụm và gõ lại `chữ này`.
+
+### Toàn bộ settings
+
+| Khóa | Ý nghĩa |
+| --- | --- |
+| `tocDoTuMoiPhut` | Tốc độ gõ WPM, từ 5 đến 1000. |
+| `demNguocGiay` | Thời gian để chuyển focus sang Google Docs. |
+| `batLoiCoY` / `tyLeLoiPhanTram` | Bật lỗi có chủ ý; đặt tỷ lệ về 0 để tắt. |
+| `batLuuLichSu` | Bật các lần nghỉ/lưu lịch sử định kỳ. |
+| `soKyTuLuuToiThieu` / `soKyTuLuuToiDa` | Khoảng ký tự ngẫu nhiên giữa các lần lưu định kỳ. |
+| `choTruocLuuGiay` / `xemLuuLichSuGiay` / `choSauLuuGiay` | Ba thời gian chờ của một lần mở lịch sử. |
+| `khoangKyTuLoiToiThieu` / `khoangKyTuLoiToiDa` | Khoảng ký tự ngẫu nhiên giữa các cụm sai. |
+| `soLoiMoiDotToiThieu` / `soLoiMoiDotToiDa` | Số cụm sai ngẫu nhiên trong mỗi đợt. |
+| `soTuCumSaiToiThieu` / `soTuCumSaiToiDa` | Số từ trong một cụm sai. |
+| `xacSuatLoiTelex` | Tỷ lệ dùng lỗi Telex thay vì lỗi bàn phím khác. |
+| `xacSuatLuuTruocKhiSua` | Tỷ lệ lưu lịch sử trước khi xóa và gõ lại cụm đúng. |
+| `batNhipTuNhien` | Bật/tắt các nhịp khựng ngẫu nhiên, nghỉ dấu câu và thay đổi nhịp gõ. |
+
+## Trang chỉnh settings
+
+Chạy giao diện local bằng npm:
+
+```sh
+npm run web
+```
+
+Mở `http://localhost:4173`, chỉnh số/toggle và bấm **Sao chép settings.json**. Dán JSON đó vào `settings.json` trước khi chạy công cụ.
+
 
 ## Kiểm tra mà không gửi phím
 
@@ -90,6 +124,18 @@ Các tuỳ chọn đầy đủ:
 Lưu ý: tiện ích nhập văn bản thuần. Nội dung sẽ kế thừa định dạng đang đặt tại con trỏ; tab có thể làm đổi ô hoặc điều khiển giao diện tuỳ ứng dụng đích.
 
 ## Bảng trong Google Docs
+
+## Directive thủ công trong văn bản
+
+Đặt directive trực tiếp trong file `.txt`; chương trình không gõ các dấu directive ra Google Docs.
+
+```text
+`[helllo yoou, hello you]`
+Xây dựng `[tap, tập]` từ vựng {save} theo thứ tự.
+```
+
+- `` `[sai, đúng]` ``: gõ phần `sai`, chạy luồng lưu/sửa hiện tại, Backspace toàn cụm rồi gõ phần `đúng`. Backtick là tuỳ chọn.
+- `` `{save}` ``: lưu lịch sử ngay tại vị trí directive, không tạo lỗi hoặc sửa nội dung. Backtick là tuỳ chọn.
 
 Dùng cú pháp sau trong file `.txt`:
 

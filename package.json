@@ -1,0 +1,5 @@
+{
+  "name": "human-typer",
+  "private": true,
+  "scripts": { "web": "node web/server.mjs" }
+}
