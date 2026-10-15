@@ -1125,9 +1125,12 @@ func correctPhrase(wrong: String, correct: String, automatic: Bool) {
     }
     guard !stopRequested else { return }
 
+    // Delete every grapheme in the complete phrase, including spaces. A
+    // stable minimum interval is more reliable in Google Docs than a very
+    // short randomized key burst, which can occasionally drop one Backspace.
     for _ in wrong {
         postKey(code: 51) // Backspace
-        pumpEvents(for: rng.between(baseDelay * 0.55, baseDelay * 1.2))
+        pumpEvents(for: max(0.08, baseDelay * 0.9))
     }
     // The panel reports final document characters, not transient typo text.
     typed = max(0, typed - wrong.count)
