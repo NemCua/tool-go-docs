@@ -80,6 +80,7 @@ Công cụ chuyển một số lệnh phổ biến sang văn bản Unicode:
 \geq          → ≥
 \in           → ∈
 \to           → →
+\Rightarrow   → →
 \; hoặc \,    → khoảng trắng LaTex bị bỏ
 ```
 

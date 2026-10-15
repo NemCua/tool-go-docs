@@ -31,6 +31,8 @@ Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ng�
 
 `xacSuatLoiTelex` (0–1, mặc định `0.75`) xác định xác suất dùng lỗi Telex cho từ tiếng Việt có dấu, chẳng hạn `chữ` thành `chuwx` và `này` thành `nayf`. Các lỗi còn lại được chọn ngẫu nhiên giữa lặp ký tự, thiếu ký tự, đảo hai ký tự kề nhau và phím gần nhau.
 
+Quy ước dự án: mọi thay đổi cú pháp hoặc hành vi công cụ phải cập nhật đồng thời README này và [chuyen-doi-text.md](chuyen-doi-text.md).
+
 `soTuCumSaiToiThieu` và `soTuCumSaiToiDa` đặt số từ trong một cụm sai. Ví dụ đặt `2` và `3` có thể tạo `chuwx nayf` trước khi xóa cả cụm và gõ lại `chữ này`.
 
 ### Toàn bộ settings
