@@ -39,6 +39,15 @@ Lấy phần bên trong code block, lưu bằng UTF-8 vào `input/ten-file.txt`,
 ./run.sh ten-file
 ```
 
+Trên Windows dùng cùng file output:
+
+```powershell
+dotnet run --project windows -- ten-file --dry-run
+dotnet run --project windows -- ten-file
+```
+
+Nếu file có bảng, Google Docs trên Windows hiện cần đặt ngôn ngữ giao diện là tiếng Việt để Tool Finder nhận đúng tên lệnh bảng.
+
 ## Ví dụ chuyển đổi
 
 ### Bảng
