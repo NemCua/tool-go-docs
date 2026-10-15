@@ -110,4 +110,4 @@ Chạy `npm run web`, mở `http://localhost:4173` rồi chọn **Preview tài l
 
 ## 8. Bảng tiến độ khi chạy trên macOS
 
-Khi chạy bình thường, một bảng tiến độ native hiện ở góc phải: trạng thái, số ký tự còn lại và thời gian ước tính theo WPM. Nút **−** chỉ ẩn bảng và vẫn tiếp tục gõ; nút **×** ẩn bảng đồng thời dừng HumanTyper. Bảng tự đóng khi hoàn tất. Nó không lấy focus khỏi Google Docs.
+Khi chạy bình thường, một bảng tiến độ native hiện ở góc phải: trạng thái, số ký tự còn lại và thời gian ước tính. Bảng không có nút chuột; dùng phím dừng khẩn cấp nếu cần dừng. Ước tính gồm WPM, nhịp tự nhiên, thời gian lưu lịch sử, lỗi dự kiến, `{save}` và tạo bảng. Nó được tính lại theo phần việc còn lại khi trạng thái đổi hoặc tối đa mỗi 2 giây, không giảm từng giây. Bảng tự đóng khi hoàn tất và không lấy focus khỏi Google Docs.

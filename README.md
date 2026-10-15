@@ -66,11 +66,9 @@ Trang **Preview tài liệu** có nút **Nạp testText.txt**, nút **Chọn t�
 
 ## Bảng tiến độ nổi trên macOS
 
-Khi chạy thật (không dùng `--dry-run`), HumanTyper hiện bảng tiến độ native ở góc phải màn hình. Bảng có trạng thái hiện tại, số ký tự còn lại và thời gian ước tính theo WPM; trong đếm ngược, lưu lịch sử, sửa lỗi hoặc tạo bảng, trạng thái cũng được cập nhật. Nó là panel không chiếm focus nên Google Docs vẫn nhận phím.
+Khi chạy thật (không dùng `--dry-run`), HumanTyper hiện bảng tiến độ native ở góc phải màn hình. Bảng không có nút chuột để không ảnh hưởng việc gửi phím tới Google Docs; dùng các phím dừng khẩn cấp đã nêu bên dưới nếu cần dừng.
 
-- Nút **−**: chỉ ẩn bảng tiến độ; quá trình gõ vẫn tiếp tục.
-- Nút **×**: ẩn bảng và dừng quá trình gõ an toàn.
-- Khi gõ xong: bảng tự biến mất.
+Thời gian là **ước tính phần việc còn lại**, tính từ WPM, nhịp tự nhiên (khựng ở khoảng trắng, dấu câu, xuống dòng và nghỉ ngẫu nhiên), thời gian mỗi lần xem lịch sử, mật độ/số lỗi dự kiến, directive `{save}` và thao tác tạo bảng. Nó được tính lại khi trạng thái đổi hoặc tối đa mỗi 2 giây trong lúc gõ, không chạy đếm ngược từng giây. Bảng tự biến mất khi hoàn tất.
 
 ## Kiểm tra mà không gửi phím
 

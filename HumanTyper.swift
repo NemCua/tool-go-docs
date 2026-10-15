@@ -36,20 +36,20 @@ struct Config {
 }
 
 // A non-activating panel keeps Google Docs focused while HumanTyper shows
-// progress. The minus button hides only this panel; the close button stops
-// typing immediately and closes it.
+// progress. It deliberately has no mouse controls: the keyboard emergency
+// shortcuts remain reliable while events are being sent to Google Docs.
 private final class ProgressOverlay: NSObject {
     private let panel: NSPanel
     private let statusLabel = NSTextField(labelWithString: "")
     private let detailLabel = NSTextField(labelWithString: "")
     private let total: Int
-    private let wpm: Double
+    private let estimateRemaining: (Int) -> Double
     private var lastDraw = Date.distantPast
     private var lastStatus = ""
 
-    init(total: Int, wpm: Double) {
+    init(total: Int, estimateRemaining: @escaping (Int) -> Double) {
         self.total = total
-        self.wpm = wpm
+        self.estimateRemaining = estimateRemaining
         panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 292, height: 112),
             styleMask: [.borderless, .nonactivatingPanel],
@@ -75,36 +75,18 @@ private final class ProgressOverlay: NSObject {
         detailLabel.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
         detailLabel.textColor = NSColor.white.withAlphaComponent(0.72)
 
-        let hideButton = makeButton(title: "−", action: #selector(hidePanel))
-        let stopButton = makeButton(title: "×", action: #selector(stopAndClose))
-        stopButton.contentTintColor = NSColor.systemRed
-        for view in [statusLabel, detailLabel, hideButton, stopButton] {
+        for view in [statusLabel, detailLabel] {
             view.translatesAutoresizingMaskIntoConstraints = false
             content.addSubview(view)
         }
         NSLayoutConstraint.activate([
             statusLabel.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
             statusLabel.topAnchor.constraint(equalTo: content.topAnchor, constant: 18),
-            statusLabel.trailingAnchor.constraint(lessThanOrEqualTo: hideButton.leadingAnchor, constant: -10),
+            statusLabel.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
             detailLabel.leadingAnchor.constraint(equalTo: statusLabel.leadingAnchor),
-            detailLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 10),
-            hideButton.topAnchor.constraint(equalTo: content.topAnchor, constant: 12),
-            hideButton.trailingAnchor.constraint(equalTo: stopButton.leadingAnchor, constant: -3),
-            hideButton.widthAnchor.constraint(equalToConstant: 29),
-            hideButton.heightAnchor.constraint(equalToConstant: 27),
-            stopButton.topAnchor.constraint(equalTo: hideButton.topAnchor),
-            stopButton.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -12),
-            stopButton.widthAnchor.constraint(equalToConstant: 29),
-            stopButton.heightAnchor.constraint(equalToConstant: 27)
+            detailLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 13),
+            detailLabel.trailingAnchor.constraint(equalTo: statusLabel.trailingAnchor)
         ])
-    }
-
-    private func makeButton(title: String, action: Selector) -> NSButton {
-        let button = NSButton(title: title, target: self, action: action)
-        button.isBordered = false
-        button.font = .systemFont(ofSize: 20, weight: .medium)
-        button.bezelStyle = .regularSquare
-        return button
     }
 
     func show(status: String, typed: Int = 0) {
@@ -118,20 +100,18 @@ private final class ProgressOverlay: NSObject {
     func update(status: String, typed: Int, force: Bool = false) {
         guard panel.isVisible else { return }
         let now = Date()
-        guard force || status != lastStatus || now.timeIntervalSince(lastDraw) >= 0.12 else { return }
+        // This is an estimate recalculated from remaining work, not a
+        // countdown. Drawing at most once every two seconds avoids UI work in
+        // the per-character typing loop.
+        guard force || status != lastStatus || now.timeIntervalSince(lastDraw) >= 2 else { return }
         lastDraw = now
         lastStatus = status
         let remaining = max(0, total - typed)
         statusLabel.stringValue = status
-        detailLabel.stringValue = "\(remaining) ký tự còn lại  •  ~\(format(seconds: Double(remaining) / max(1, wpm * 5)))"
+        detailLabel.stringValue = "\(remaining) ký tự còn lại  •  ~\(format(seconds: estimateRemaining(typed)))"
     }
 
     func close() { panel.orderOut(nil) }
-    @objc private func hidePanel() { panel.orderOut(nil) }
-    @objc private func stopAndClose() {
-        stopRequested = true
-        close()
-    }
     private func format(seconds: Double) -> String {
         let rounded = max(0, Int(seconds.rounded()))
         return String(format: "%02d:%02d", rounded / 60, rounded % 60)
@@ -508,6 +488,32 @@ enum DocumentPart {
     case save
 }
 
+// The estimate uses the same configurable waits as the real run. It is
+// intentionally approximate because typo locations and natural rhythm are
+// random, but it includes their expected average cost.
+private struct ProgressEstimatePlan {
+    let totalCharacters: Int
+    let typingSecondsPerCharacter: Double
+    let periodicSaveSeconds: Double
+    let periodicSaveEveryCharacters: Double?
+    let manualSaveCount: Int
+    let expectedAutoCorrectionsPerSave: Double
+    let correctionSeconds: Double
+    let tableSeconds: [Double]
+
+    func remainingSeconds(typed: Int, completedSaves: Int, completedTables: Int) -> Double {
+        let remaining = Double(max(0, totalCharacters - typed))
+        let periodicSaves = periodicSaveEveryCharacters.map { remaining / $0 } ?? 0
+        let remainingManualSaves = Double(max(0, manualSaveCount - completedSaves))
+        let expectedCorrections = periodicSaves * expectedAutoCorrectionsPerSave
+        let pendingTables = tableSeconds.dropFirst(min(completedTables, tableSeconds.count)).reduce(0, +)
+        return remaining * typingSecondsPerCharacter
+            + (periodicSaves + remainingManualSaves + expectedCorrections) * periodicSaveSeconds
+            + expectedCorrections * correctionSeconds
+            + pendingTables
+    }
+}
+
 private func expandDirectives(_ parts: [DocumentPart]) -> [DocumentPart] {
     // Directives may be wrapped in Markdown backticks (or escaped backticks)
     // without those wrapper characters being typed into the document.
@@ -800,6 +806,63 @@ let tableCount = documentParts.reduce(0) { total, part in
     if case .table = part { return total + 1 }
     return total
 }
+
+var finalText = ""
+var manualSaveCount = 0
+var tableDurations: [Double] = []
+for part in documentParts {
+    switch part {
+    case .text(let text):
+        finalText += text
+    case .manualCorrection(_, let correct):
+        finalText += correct
+    case .save:
+        manualSaveCount += 1
+    case .table(let rows, let columns, let cells):
+        finalText += cells.joined()
+        // Tool Finder command plus row/column changes, positioning, tabs and
+        // the table-exit shortcut. These are the fixed waits used below.
+        let extraColumns = columns > 2 ? columns - 2 : (columns == 1 ? 1 : 0)
+        let extraRows = rows > 2 ? rows - 2 : (rows == 1 ? 1 : 0)
+        let commandSeconds = 1.05 + Double(extraColumns + extraRows) * 0.95
+        let positionSeconds = Double(max(0, rows - 2)) * 0.15 + 0.2
+        let cellNavigationSeconds = Double(max(0, cells.count - 1)) * 0.3
+        tableDurations.append(commandSeconds + positionSeconds + cellNavigationSeconds + 0.79)
+    }
+}
+let baseTypingSeconds = 60.0 / (config.wpm * 5)
+var rhythmExtraSeconds = 0.0
+if config.naturalRhythm {
+    for character in finalText {
+        // Expected values of the random delays in naturalDelay().
+        rhythmExtraSeconds += baseTypingSeconds * 0.03 + 0.0135
+        if character == " " { rhythmExtraSeconds += 0.0525 }
+        if ",;:".contains(character) { rhythmExtraSeconds += 0.22 }
+        if ".!?".contains(character) { rhythmExtraSeconds += 0.525 }
+        if character == "\n" { rhythmExtraSeconds += 0.725 }
+    }
+}
+let averageRhythmExtra = finalText.isEmpty ? 0 : rhythmExtraSeconds / Double(finalText.count)
+let saveSeconds = config.waitBeforeHistory + config.historyViewTime + config.waitAfterHistory + 0.8
+let averageHistoryInterval = Double(config.historyMinCharacters + config.historyMaxCharacters) / 2
+let periodicInterval: Double? = config.longPauses && config.visitHistoryDuringPauses ? averageHistoryInterval : nil
+let averageTyposPerCycle = Double(config.typosMinPerHistory + config.typosMaxPerHistory) / 2
+let averageWords = max(1, finalText.split(whereSeparator: { $0.isWhitespace }).count)
+let averageWordLength = Double(max(4, finalText.count / averageWords))
+let averagePhraseWords = Double(config.typoPhraseMinWords + config.typoPhraseMaxWords) / 2
+let correctionSeconds = averageWordLength * averagePhraseWords * baseTypingSeconds * 2
+private let progressPlan = ProgressEstimatePlan(
+    totalCharacters: textCharacterCount,
+    typingSecondsPerCharacter: baseTypingSeconds + averageRhythmExtra,
+    periodicSaveSeconds: saveSeconds,
+    periodicSaveEveryCharacters: periodicInterval,
+    manualSaveCount: manualSaveCount,
+    expectedAutoCorrectionsPerSave: config.errorRate > 0 ? averageTyposPerCycle : 0,
+    correctionSeconds: correctionSeconds,
+    tableSeconds: tableDurations
+)
+private var completedSaveCount = 0
+private var completedTableCount = 0
 print("Đã đọc \(textCharacterCount) ký tự và \(tableCount) bảng từ \(fileURL.lastPathComponent).")
 if config.dryRun {
     let estimate = Double(textCharacterCount) / (config.wpm * 5) * 60
@@ -821,7 +884,13 @@ guard installSafetyMonitor() != nil else {
 }
 
 NSApplication.shared.setActivationPolicy(.accessory)
-progressOverlay = ProgressOverlay(total: textCharacterCount, wpm: config.wpm)
+progressOverlay = ProgressOverlay(total: textCharacterCount, estimateRemaining: { typed in
+    progressPlan.remainingSeconds(
+        typed: typed,
+        completedSaves: completedSaveCount,
+        completedTables: completedTableCount
+    )
+})
 progressOverlay?.show(status: config.countdown > 0 ? "Chuẩn bị bắt đầu" : "Đang gõ")
 
 if config.countdown > 0 {
@@ -1005,6 +1074,7 @@ documentLoop: for part in documentParts {
         pumpEvents(for: config.waitBeforeHistory)
         if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
         if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
+        if !stopRequested { completedSaveCount += 1 }
     case .table(let rows, let columns, let cells):
         print("\nĐang tạo bảng \(rows)x\(columns)…")
         progressOverlay?.update(status: "Đang tạo bảng \(rows)x\(columns)", typed: typed, force: true)
@@ -1027,6 +1097,7 @@ documentLoop: for part in documentParts {
         }
         if !stopRequested {
             exitGoogleDocsTable()
+            completedTableCount += 1
         }
     }
 }
