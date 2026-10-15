@@ -75,6 +75,7 @@ class Program {
     }
 
     static void Run(string[] args) {
+        Application.EnableVisualStyles();
         var root = FindProjectRoot();
         settings = LoadSettings(Path.Combine(root, "settings.json"));
         var parsed = ParseArguments(args, settings);
