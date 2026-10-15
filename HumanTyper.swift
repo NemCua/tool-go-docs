@@ -525,13 +525,14 @@ private func visitGoogleDocsVersionHistory(viewTime: Double) {
 
 private func replaceAllInGoogleDocs(wrong: String, correct: String) {
     guard !wrong.isEmpty, wrong != correct else { return }
-    // Google Docs macOS Find and replace dialog. The tab order is the one
-    // used by the Vietnamese UI: Find -> Replace -> options -> Replace all.
-    postShortcut(code: 3, flags: .maskCommand) // Command+F
+    // Command+F opens only Find. Google Docs uses Command+Shift+H for the
+    // actual Find and replace dialog.
+    postShortcut(code: 4, flags: [.maskCommand, .maskShift])
     pumpEvents(for: 0.8)
     postText(wrong)
     pumpEvents(for: 0.35)
-    for _ in 0..<4 { postKey(code: 48); pumpEvents(for: 0.08) }
+    postKey(code: 48) // Replace with input.
+    pumpEvents(for: 0.12)
     postText(correct)
     pumpEvents(for: 0.25)
     for _ in 0..<5 { postKey(code: 48); pumpEvents(for: 0.08) }
@@ -641,6 +642,17 @@ var charactersSinceTypo = 0
 var typosThisHistoryCycle = 0
 var targetTyposThisHistoryCycle = rng.int(config.typosMinPerHistory...config.typosMaxPerHistory)
 
+func applyPendingCorrections() {
+    // A single Replace all fixes every occurrence of the same typo.
+    var handled = Set<String>()
+    for correction in pendingCorrections where !stopRequested {
+        let key = correction.wrong + "\u{0}" + correction.correct
+        guard handled.insert(key).inserted else { continue }
+        replaceAllInGoogleDocs(wrong: correction.wrong, correct: correction.correct)
+    }
+    pendingCorrections.removeAll()
+}
+
 func intentionallyMistypeWords(_ text: String, rng: inout RNG,
                                 corrections: inout [(wrong: String, correct: String)]) -> String {
     var result = ""
@@ -648,7 +660,7 @@ func intentionallyMistypeWords(_ text: String, rng: inout RNG,
     func flushWord() {
         guard !word.isEmpty else { return }
         var wrong = word
-        if typosThisHistoryCycle < targetTyposThisHistoryCycle && charactersSinceTypo >= rng.int(config.typoMinCharacters...config.typoMaxCharacters) && rng.unit() < config.errorRate {
+        if config.errorRate > 0 && typosThisHistoryCycle < targetTyposThisHistoryCycle && charactersSinceTypo >= rng.int(config.typoMinCharacters...config.typoMaxCharacters) {
             let chars = Array(word)
             if let index = chars.indices.randomElement(using: &rng), let replacement = typo(for: chars[index], rng: &rng) {
                 var changed = chars
@@ -695,6 +707,10 @@ let typeString: (String) -> Void = { text in
             print("Đang mở lịch sử phiên bản rồi quay lại…")
             visitGoogleDocsVersionHistory(viewTime: config.historyViewTime)
         }
+        if !stopRequested && !pendingCorrections.isEmpty {
+            print("Đang mở Tìm và thay thế để sửa \(pendingCorrections.count) cụm…")
+            applyPendingCorrections()
+        }
         if !stopRequested {
             print("Đang nghỉ thêm \(config.waitAfterHistory) giây trước khi tiếp tục gõ…")
             pumpEvents(for: config.waitAfterHistory)
@@ -740,10 +756,7 @@ documentLoop: for part in documentParts {
 
 if !stopRequested && !pendingCorrections.isEmpty {
     print("\nĐang tìm và sửa \(pendingCorrections.count) cụm viết sai…")
-    for correction in pendingCorrections {
-        if stopRequested { break }
-        replaceAllInGoogleDocs(wrong: correction.wrong, correct: correction.correct)
-    }
+    applyPendingCorrections()
 }
 
 if stopRequested {
