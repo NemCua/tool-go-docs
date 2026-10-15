@@ -48,7 +48,6 @@ Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ng�
 | `soTuCumSaiToiThieu` / `soTuCumSaiToiDa` | Số từ trong một cụm sai. |
 | `xacSuatLoiTelex` | Tỷ lệ dùng lỗi Telex thay vì lỗi bàn phím khác. |
 | `xacSuatLuuTruocKhiSua` | Tỷ lệ lưu lịch sử trước khi xóa và gõ lại cụm đúng. |
-| `chiGoVanBan` | Chế độ gõ đều thuần túy: không lỗi, không lưu, không sửa. |
 | `batNhipTuNhien` | Bật/tắt các nhịp khựng ngẫu nhiên, nghỉ dấu câu và thay đổi nhịp gõ. |
 
 ## Trang chỉnh settings
@@ -61,21 +60,6 @@ npm run web
 
 Mở `http://localhost:4173`, chỉnh số/toggle và bấm **Sao chép settings.json**. Dán JSON đó vào `settings.json` trước khi chạy công cụ.
 
-## Chỉ gõ văn bản
-
-Để gõ thuần văn bản, không lỗi có chủ ý, không lưu lịch sử và không thao tác sửa, truyền tốc độ ngay sau tên file:
-
-```sh
-./run.sh testText 500
-```
-
-Lệnh trên đọc `input/testText.txt` và gõ ở 500 WPM. Hoặc đặt `"chiGoVanBan": true` trong `settings.json`, rồi chạy ngắn gọn:
-
-```sh
-./run.sh testText
-```
-
-Chế độ này gõ liên tục với độ trễ cố định theo WPM, không có nhịp nghỉ ở dấu câu, khoảng dừng ngẫu nhiên hoặc nghỉ lịch sử.
 
 ## Kiểm tra mà không gửi phím
 

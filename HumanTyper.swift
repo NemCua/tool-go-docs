@@ -27,7 +27,6 @@ struct Config {
     var typosMaxPerHistory = 3
     var telexTypoProbability = 0.75
     var historyBeforeCorrectionProbability = 0.5
-    var plainTypingOnly = false
     var typoPhraseMinWords = 1
     var typoPhraseMaxWords = 3
     var naturalRhythm = true
@@ -79,7 +78,7 @@ private func usage() -> Never {
     HumanTyper — mô phỏng nhịp đánh máy trên macOS
 
     Cách dùng:
-      ./human-typer [TÊN_FILE] [TỐC_ĐỘ] [--wpm 120] [--error-rate 2.5] [--countdown 15]
+      ./human-typer [TÊN_FILE] [--wpm 120] [--error-rate 2.5] [--countdown 15]
 
     Tuỳ chọn:
       --wpm N          Tốc độ trung bình, mặc định 120
@@ -88,7 +87,6 @@ private func usage() -> Never {
       --seed N         Cố định chuỗi ngẫu nhiên để chạy lặp lại
       --no-errors      Không cố ý gõ sai
       --no-history     Không tự mở lịch sử phiên bản và nghỉ dài
-      --only-type      Chỉ gõ văn bản, không lỗi hoặc lưu lịch sử
       --dry-run        Chỉ đọc và thống kê file, không gửi phím
       --table-only     Chỉ tạo bảng rồi dừng để kiểm tra vị trí focus
       --position-only  Tạo bảng, nhấn Lên để về hàng đầu rồi dừng
@@ -129,15 +127,9 @@ private func loadSettings(into config: inout Config) {
     if let n = json["soLoiMoiDotToiDa"] as? Int { config.typosMaxPerHistory = n }
     if let n = json["xacSuatLoiTelex"] as? Double { config.telexTypoProbability = n }
     if let n = json["xacSuatLuuTruocKhiSua"] as? Double { config.historyBeforeCorrectionProbability = n }
-    if let n = json["chiGoVanBan"] as? Bool { config.plainTypingOnly = n }
     if let n = json["soTuCumSaiToiThieu"] as? Int { config.typoPhraseMinWords = n }
     if let n = json["soTuCumSaiToiDa"] as? Int { config.typoPhraseMaxWords = n }
     if let n = json["batNhipTuNhien"] as? Bool { config.naturalRhythm = n }
-    if config.plainTypingOnly {
-        config.errorRate = 0
-        config.longPauses = false
-        config.visitHistoryDuringPauses = false
-    }
     guard config.wpm >= 5, config.wpm <= 1000, config.errorRate >= 0, config.errorRate <= 0.3,
           config.countdown >= 0, config.countdown <= 60, config.historyMinCharacters >= 1,
           config.historyMaxCharacters >= config.historyMinCharacters, config.waitBeforeHistory >= 0,
@@ -163,11 +155,6 @@ private func parseArguments() -> Config {
         case "--no-errors": config.errorRate = 0
         case "--no-long-pauses": config.longPauses = false
         case "--no-history": config.visitHistoryDuringPauses = false
-        case "--only-type":
-            config.plainTypingOnly = true
-            config.errorRate = 0
-            config.longPauses = false
-            config.visitHistoryDuringPauses = false
         case "--dry-run": config.dryRun = true
         case "--table-only": config.tableOnly = true
         case "--position-only": config.positionOnly = true
@@ -191,17 +178,8 @@ private func parseArguments() -> Config {
             }
         default:
             if arg.hasPrefix("-") { fail("tuỳ chọn không hợp lệ: \(arg)") }
-            if config.fileName == nil {
-                config.fileName = arg
-            } else if let n = Double(arg), n >= 5, n <= 1000 {
-                config.wpm = n
-                config.plainTypingOnly = true
-                config.errorRate = 0
-                config.longPauses = false
-                config.visitHistoryDuringPauses = false
-            } else {
-                fail("sau tên file chỉ được đặt tốc độ từ 5 đến 1000")
-            }
+            if config.fileName != nil { fail("chỉ được chọn một file .txt") }
+            config.fileName = arg
         }
         i += 1
     }
@@ -717,18 +695,18 @@ var targetTyposThisHistoryCycle = rng.int(config.typosMinPerHistory...config.typ
 func typeCharacter(_ character: Character) {
     if stopRequested { return }
 
-    if !config.plainTypingOnly && config.naturalRhythm && untilBurstChange == 0 {
+    if config.naturalRhythm && untilBurstChange == 0 {
         burstFactor = rng.between(0.72, 1.32)
         untilBurstChange = rng.int(3...12)
     }
-    if !config.plainTypingOnly && config.naturalRhythm { untilBurstChange -= 1 }
+    if config.naturalRhythm { untilBurstChange -= 1 }
 
     postText(String(character))
     typed += 1
     typedSinceLongPause += 1
     // Plain mode is deliberately constant: no punctuation pauses, bursts, or
     // random breaks—only the delay required by the selected WPM.
-    let delay = config.plainTypingOnly || !config.naturalRhythm
+    let delay = !config.naturalRhythm
         ? baseDelay
         : naturalDelay(after: character, base: baseDelay, burst: burstFactor, rng: &rng)
     pumpEvents(for: delay)
