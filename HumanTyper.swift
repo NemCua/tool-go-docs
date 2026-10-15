@@ -514,7 +514,8 @@ private func convertMathBody(_ body: String) -> String {
     }
 
     let replacements: [(String, String)] = [
-        (#"\leftrightarrow"#, "↔"), (#"\rightarrow"#, "→"), (#"\leftarrow"#, "←"),
+        (#"\leftrightarrow"#, "↔"), (#"\Rightarrow"#, "→"), (#"\Leftarrow"#, "←"),
+        (#"\rightarrow"#, "→"), (#"\leftarrow"#, "←"),
         (#"\subseteq"#, "⊆"), (#"\supseteq"#, "⊇"), (#"\langle"#, "⟨"),
         (#"\rangle"#, "⟩"), (#"\notin"#, "∉"), (#"\infty"#, "∞"),
         (#"\forall"#, "∀"), (#"\exists"#, "∃"), (#"\times"#, "×"),

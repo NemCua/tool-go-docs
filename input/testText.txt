@@ -17,7 +17,7 @@ Mục 1	Mục 2	Mục 3
 
 Xây dựng `[tap, tập]` từ vựng `{save}` theo thứ tự.
 `[helllo yoou, hello you]`
-Từ `chuwx nayf, chữ này` được sửa tại chỗ.
+Từ `[chuwx nayf, chữ này]` được sửa tại chỗ.
 {save}
 
 ## 4. LaTex được chuyển thành văn bản
