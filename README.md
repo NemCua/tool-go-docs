@@ -82,13 +82,13 @@ npm run web
 
 Mở `http://localhost:4173`, chỉnh số/toggle và bấm **Sao chép settings.json**. Dán JSON đó vào `settings.json` trước khi chạy công cụ.
 
-Trang **Preview tài liệu** có nút **Nạp testText.txt**, nút **Chọn tệp** và nút **Cập nhật preview**. Nó mô phỏng nội dung cuối cùng trên một khung giấy, dùng cùng quy tắc chuyển đổi với bản macOS: directive `[sai, đúng]`, `{save}`, bảng và LaTex (`\\frac`, `\\boxed`, ký hiệu, chỉ số dưới). Preview không gửi phím hoặc thay đổi Google Docs.
+Trang **Preview tài liệu** có nút **Nạp testText.txt**, nút **Chọn tệp** và nút **Cập nhật preview**. Khi nạp hoặc dán nội dung, trang đọc `settings.json` và hiện thời gian ước tính cùng số ký tự, lưu tự động, lỗi, directive và bảng. Nội dung mô phỏng dùng cùng quy tắc chuyển đổi với bản macOS: directive `[sai, đúng]`, `{save}`, bảng và LaTex (`\\frac`, `\\boxed`, ký hiệu, chỉ số dưới). Preview không gửi phím hoặc thay đổi Google Docs.
 
 ## Bảng tiến độ nổi trên macOS
 
 Khi chạy thật (không dùng `--dry-run`), HumanTyper hiện panel kính mờ tối native ở góc phải màn hình, gồm trạng thái chữ lớn, thời gian ước tính trên hàng riêng, số ký tự, phần trăm và thanh tiến độ. Panel luôn dùng nền tối tương phản kể cả khi macOS đang ở Light Mode; số đếm ngược có animation nhẹ. Bảng không có nút chuột để không ảnh hưởng việc gửi phím tới Google Docs; dùng các phím dừng khẩn cấp đã nêu bên dưới nếu cần dừng.
 
-Thời gian là **ước tính phần việc còn lại**, tính từ WPM, nhịp tự nhiên, số lần lưu tự động dựa trên tổng ký tự và trung bình `soKyTuLuuToiThieu`/`soKyTuLuuToiDa`, số lỗi dự kiến theo khoảng lỗi và giới hạn mỗi chu kỳ, mỗi directive `[sai, đúng]`, `{save}` và thao tác tạo bảng. Mỗi lần sửa lỗi được tính thêm một lần lưu; xác suất `xacSuatLuuTruocKhiSua` chỉ quyết định lưu trước hay sau khi sửa nên không nhân đôi số lần lưu. Ước tính được tính lại khi trạng thái đổi hoặc tối đa mỗi 2 giây, không chạy đếm ngược từng giây. Bảng tự biến mất khi hoàn tất.
+Thời gian là **ước tính phần việc còn lại**, tính từ WPM, nhịp tự nhiên, số lần lưu tự động dựa trên tổng ký tự và trung bình `soKyTuLuuToiThieu`/`soKyTuLuuToiDa`, số lỗi dự kiến theo khoảng lỗi và giới hạn mỗi chu kỳ, mỗi directive `[sai, đúng]`, `{save}` và thao tác tạo bảng. Mỗi hàng của bảng cộng 1 giây và mỗi cột cộng 1 giây. Mỗi lần sửa lỗi được tính thêm một lần lưu; xác suất `xacSuatLuuTruocKhiSua` chỉ quyết định lưu trước hay sau khi sửa nên không nhân đôi số lần lưu. Ước tính được tính lại khi trạng thái đổi hoặc tối đa mỗi 2 giây, không chạy đếm ngược từng giây. Bảng tự biến mất khi hoàn tất.
 
 
 ## Kiểm tra mà không gửi phím

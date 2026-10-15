@@ -1,1 +1,31 @@
-<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HumanTyper Preview</title><link rel="stylesheet" href="style.css"><body class="preview"><header><a href="index.html">← Settings</a><b>HumanTyper Preview</b><div><button id="sample">Nạp testText.txt</button><label>Nạp file .txt <input id="file" type="file" accept=".txt,text/plain"></label></div></header><main class="preview-grid"><section class="source"><h2>Nội dung nguồn</h2><textarea id="input" spellcheck="false" placeholder="Dán văn bản hoặc nạp file .txt..."></textarea><button id="render">Cập nhật preview →</button></section><section><h2>Kết quả mô phỏng Google Docs</h2><article id="paper" class="paper"><p class="hint">Nạp/dán nội dung rồi bấm “Cập nhật preview”.</p></article></section></main><script src="preview.js"></script></body></html>
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HumanTyper Preview</title>
+<link rel="stylesheet" href="style.css">
+<body class="preview">
+<header>
+  <a href="index.html">← Settings</a>
+  <b>HumanTyper Preview</b>
+  <div><button id="sample">Nạp testText.txt</button><label>Nạp file .txt <input id="file" type="file" accept=".txt,text/plain"></label></div>
+</header>
+<main class="preview-grid">
+  <section class="source">
+    <h2>Nội dung nguồn</h2>
+    <textarea id="input" spellcheck="false" placeholder="Dán văn bản hoặc nạp file .txt..."></textarea>
+    <button id="render">Cập nhật preview →</button>
+  </section>
+  <section>
+    <h2>Kết quả mô phỏng Google Docs</h2>
+    <aside id="estimate" class="estimate-card" aria-live="polite">
+      <span class="estimate-label">THỜI GIAN ƯỚC TÍNH</span>
+      <strong id="estimate-time">—</strong>
+      <span id="estimate-detail">Nạp nội dung để tính theo settings.json</span>
+    </aside>
+    <article id="paper" class="paper"><p class="hint">Nạp/dán nội dung rồi bấm “Cập nhật preview”.</p></article>
+  </section>
+</main>
+<script src="preview.js"></script>
+</body>
+</html>
