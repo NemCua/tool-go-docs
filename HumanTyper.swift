@@ -1,5 +1,4 @@
 import ApplicationServices
-import AppKit
 import Foundation
 
 private var stopRequested = false
@@ -27,10 +26,6 @@ struct Config {
     var typosMinPerHistory = 1
     var typosMaxPerHistory = 3
     var telexTypoProbability = 0.75
-    var autoCorrectTypos = false
-    var findReplaceOpenSeconds = 1.5
-    var findReplaceStepSeconds = 0.35
-    var findReplaceApplySeconds = 1.5
     var seed: UInt64?
 }
 
@@ -127,18 +122,13 @@ private func loadSettings(into config: inout Config) {
     if let n = json["typosMinPerHistory"] as? Int { config.typosMinPerHistory = n }
     if let n = json["typosMaxPerHistory"] as? Int { config.typosMaxPerHistory = n }
     if let n = json["telexTypoProbability"] as? Double { config.telexTypoProbability = n }
-    if let n = json["autoCorrectTypos"] as? Bool { config.autoCorrectTypos = n }
-    if let n = json["findReplaceOpenSeconds"] as? Double { config.findReplaceOpenSeconds = n }
-    if let n = json["findReplaceStepSeconds"] as? Double { config.findReplaceStepSeconds = n }
-    if let n = json["findReplaceApplySeconds"] as? Double { config.findReplaceApplySeconds = n }
     guard config.wpm >= 5, config.wpm <= 300, config.errorRate >= 0, config.errorRate <= 0.3,
           config.countdown >= 0, config.countdown <= 60, config.historyMinCharacters >= 1,
           config.historyMaxCharacters >= config.historyMinCharacters, config.waitBeforeHistory >= 0,
           config.historyViewTime >= 0, config.waitAfterHistory >= 0, config.typoMinCharacters >= 1,
           config.typoMaxCharacters >= config.typoMinCharacters, config.typosMinPerHistory >= 0,
           config.typosMaxPerHistory >= config.typosMinPerHistory, config.telexTypoProbability >= 0,
-          config.telexTypoProbability <= 1, config.findReplaceOpenSeconds >= 0.2,
-          config.findReplaceStepSeconds >= 0.05, config.findReplaceApplySeconds >= 0.2 else {
+          config.telexTypoProbability <= 1 else {
         fail("một hoặc nhiều giá trị trong settings.json nằm ngoài phạm vi hợp lệ")
     }
 }
@@ -359,6 +349,33 @@ private func telexTypo(for word: String) -> String? {
     return changed ? result : nil
 }
 
+private func randomWordTypo(for word: String, rng: inout RNG, telexProbability: Double) -> String? {
+    let chars = Array(word)
+    guard !chars.isEmpty else { return nil }
+    if rng.unit() < telexProbability, let telex = telexTypo(for: word) { return telex }
+    switch rng.int(0...3) {
+    case 0: // Repeat a character: "text" -> "teext".
+        let index = rng.int(0...(chars.count - 1))
+        var changed = chars
+        changed.insert(chars[index], at: index)
+        return String(changed)
+    case 1 where chars.count > 2: // Omit a character.
+        var changed = chars
+        changed.remove(at: rng.int(0...(chars.count - 1)))
+        return String(changed)
+    case 2 where chars.count > 2: // Swap adjacent characters.
+        var changed = chars
+        let index = rng.int(0...(chars.count - 2))
+        changed.swapAt(index, index + 1)
+        return String(changed)
+    default: // Hit a neighbouring keyboard key.
+        guard let index = chars.indices.randomElement(using: &rng), let replacement = typo(for: chars[index], rng: &rng) else { return nil }
+        var changed = chars
+        changed[index] = replacement
+        return String(changed)
+    }
+}
+
 private func naturalDelay(after character: Character, base: Double, burst: Double, rng: inout RNG) -> Double {
     var delay = base * burst * rng.between(0.58, 1.48)
     if character == " " { delay += rng.between(0.015, 0.09) }
@@ -566,47 +583,6 @@ private func visitGoogleDocsVersionHistory(viewTime: Double) {
     pumpEvents(for: 0.8)
 }
 
-private func replaceAllInGoogleDocs(wrong: String, correct: String) {
-    guard !wrong.isEmpty, wrong != correct else { return }
-    // Command+F opens only Find. Google Docs uses Command+Shift+H for the
-    // actual Find and replace dialog.
-    postShortcut(code: 4, flags: [.maskCommand, .maskShift])
-    pumpEvents(for: config.findReplaceOpenSeconds)
-    pasteIntoFocusedField(wrong)
-    pumpEvents(for: config.findReplaceStepSeconds)
-    // The dialog opens with Find focused; one Tab moves to "Replace with".
-    postKey(code: 48)
-    pumpEvents(for: config.findReplaceStepSeconds)
-    pasteIntoFocusedField(correct)
-    pumpEvents(for: config.findReplaceStepSeconds)
-    for _ in 0..<5 { postKey(code: 48); pumpEvents(for: config.findReplaceStepSeconds) }
-    postKey(code: 36) // Enter: Thay thế tất cả
-    pumpEvents(for: config.findReplaceApplySeconds)
-    // Escape is unreliable in this Google Docs modal. From the Replace all
-    // button, one Tab reaches the close (X) control. Space activates a
-    // focused button without leaking an Enter/newline into the document.
-    postKey(code: 48)
-    pumpEvents(for: config.findReplaceStepSeconds)
-    postKey(code: 49) // Space
-    pumpEvents(for: config.findReplaceStepSeconds)
-}
-
-private func pasteIntoFocusedField(_ text: String) {
-    // Google Docs' dialog fields occasionally ignore synthetic Unicode key
-    // events. Pasting is reliable there; restore the user's plain-text
-    // clipboard contents immediately afterwards.
-    let board = NSPasteboard.general
-    let previousText = board.string(forType: .string)
-    board.clearContents()
-    board.setString(text, forType: .string)
-    postShortcut(code: 9, flags: .maskCommand) // Command+V
-    pumpEvents(for: 0.2)
-    if let previousText {
-        board.clearContents()
-        board.setString(previousText, forType: .string)
-    }
-}
-
 private func exitGoogleDocsTable() {
     // Official Google Docs shortcut on macOS: hold Control + Command + Shift,
     // then press T followed by E (Exit table).
@@ -702,30 +678,9 @@ var typed = 0
 var typedSinceLongPause = 0
 var nextLongPauseAt = rng.int(config.historyMinCharacters...config.historyMaxCharacters)
 var longPauseCount = 0
-var pendingCorrections: [(wrong: String, correct: String)] = []
 var charactersSinceTypo = 0
 var typosThisHistoryCycle = 0
 var targetTyposThisHistoryCycle = rng.int(config.typosMinPerHistory...config.typosMaxPerHistory)
-private let resumeMarker = "[[HTYPER_RESUME_4D91C8]]"
-
-func applyPendingCorrections() {
-    // Keep a unique marker at the exact insertion point. Find & replace
-    // normally returns the caret to the last matched typo, not where typing
-    // paused. Replacing this marker with nothing restores that position.
-    postText(resumeMarker)
-    pumpEvents(for: config.findReplaceStepSeconds)
-    // A single Replace all fixes every occurrence of the same typo.
-    var handled = Set<String>()
-    for correction in pendingCorrections where !stopRequested {
-        let key = correction.wrong + "\u{0}" + correction.correct
-        guard handled.insert(key).inserted else { continue }
-        replaceAllInGoogleDocs(wrong: correction.wrong, correct: correction.correct)
-    }
-    pendingCorrections.removeAll()
-    if !stopRequested {
-        replaceAllInGoogleDocs(wrong: resumeMarker, correct: "")
-    }
-}
 
 func typeCharacter(_ character: Character) {
     if stopRequested { return }
@@ -749,10 +704,6 @@ func typeCharacter(_ character: Character) {
             print("Đang mở lịch sử phiên bản rồi quay lại…")
             visitGoogleDocsVersionHistory(viewTime: config.historyViewTime)
         }
-        if config.autoCorrectTypos && !stopRequested && !pendingCorrections.isEmpty {
-            print("Đang mở Tìm và thay thế để sửa \(pendingCorrections.count) cụm…")
-            applyPendingCorrections()
-        }
         if !stopRequested {
             print("Đang nghỉ thêm \(config.waitAfterHistory) giây trước khi tiếp tục gõ…")
             pumpEvents(for: config.waitAfterHistory)
@@ -771,16 +722,8 @@ func typeWord(_ word: String) {
     var correction: (wrong: String, correct: String)?
     if config.errorRate > 0 && typosThisHistoryCycle < targetTyposThisHistoryCycle &&
        charactersSinceTypo >= rng.int(config.typoMinCharacters...config.typoMaxCharacters) {
-        let chars = Array(word)
-        if rng.unit() < config.telexTypoProbability, let telex = telexTypo(for: word) {
-            displayed = telex
-            correction = (wrong: displayed, correct: word)
-            typosThisHistoryCycle += 1
-            charactersSinceTypo = 0
-        } else if let index = chars.indices.randomElement(using: &rng), let replacement = typo(for: chars[index], rng: &rng) {
-            var changed = chars
-            changed[index] = replacement
-            displayed = String(changed)
+        if let wrong = randomWordTypo(for: word, rng: &rng, telexProbability: config.telexTypoProbability) {
+            displayed = wrong
             correction = (wrong: displayed, correct: word)
             typosThisHistoryCycle += 1
             charactersSinceTypo = 0
@@ -850,11 +793,6 @@ documentLoop: for part in documentParts {
             exitGoogleDocsTable()
         }
     }
-}
-
-if config.autoCorrectTypos && !stopRequested && !pendingCorrections.isEmpty {
-    print("\nĐang tìm và sửa \(pendingCorrections.count) cụm viết sai…")
-    applyPendingCorrections()
 }
 
 if stopRequested {

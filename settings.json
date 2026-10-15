@@ -4,16 +4,13 @@
   "intentionalTypos": true,
   "errorRatePercent": 2.5,
   "historyEnabled": true,
-  "historyMinCharacters": 180,
-  "historyMaxCharacters": 300,
+  "historyMinCharacters": 80,
+  "historyMaxCharacters": 100,
   "waitBeforeHistorySeconds": 5,
   "historyViewSeconds": 5,
   "waitAfterHistorySeconds": 5,
-  "typoMinCharacters": 80,
-  "typoMaxCharacters": 160,
-  "typosMinPerHistory": 1,
-  "typosMaxPerHistory": 3,
-  "findReplaceOpenSeconds": 1.5,
-  "findReplaceStepSeconds": 0.35,
-  "findReplaceApplySeconds": 1.5
+  "typoMinCharacters": 40,
+  "typoMaxCharacters": 60,
+  "typosMinPerHistory": 2,
+  "typosMaxPerHistory": 3
 }
