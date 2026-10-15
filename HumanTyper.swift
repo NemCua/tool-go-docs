@@ -28,6 +28,8 @@ struct Config {
     var telexTypoProbability = 0.75
     var historyBeforeCorrectionProbability = 0.5
     var plainTypingOnly = false
+    var typoPhraseMinWords = 1
+    var typoPhraseMaxWords = 3
     var seed: UInt64?
 }
 
@@ -127,6 +129,8 @@ private func loadSettings(into config: inout Config) {
     if let n = json["xacSuatLoiTelex"] as? Double { config.telexTypoProbability = n }
     if let n = json["xacSuatLuuTruocKhiSua"] as? Double { config.historyBeforeCorrectionProbability = n }
     if let n = json["chiGoVanBan"] as? Bool { config.plainTypingOnly = n }
+    if let n = json["soTuCumSaiToiThieu"] as? Int { config.typoPhraseMinWords = n }
+    if let n = json["soTuCumSaiToiDa"] as? Int { config.typoPhraseMaxWords = n }
     if config.plainTypingOnly {
         config.errorRate = 0
         config.longPauses = false
@@ -139,7 +143,8 @@ private func loadSettings(into config: inout Config) {
           config.typoMaxCharacters >= config.typoMinCharacters, config.typosMinPerHistory >= 0,
           config.typosMaxPerHistory >= config.typosMinPerHistory, config.telexTypoProbability >= 0,
           config.telexTypoProbability <= 1, config.historyBeforeCorrectionProbability >= 0,
-          config.historyBeforeCorrectionProbability <= 1 else {
+          config.historyBeforeCorrectionProbability <= 1, config.typoPhraseMinWords >= 1,
+          config.typoPhraseMaxWords >= config.typoPhraseMinWords else {
         fail("một hoặc nhiều giá trị trong settings.json nằm ngoài phạm vi hợp lệ")
     }
 }
@@ -746,43 +751,29 @@ func typeCharacter(_ character: Character) {
     }
 }
 
-func typeWord(_ word: String) {
-    guard !word.isEmpty else { return }
-    var displayed = word
-    var correction: (wrong: String, correct: String)?
-    if config.errorRate > 0 && typosThisHistoryCycle < targetTyposThisHistoryCycle &&
-       charactersSinceTypo >= rng.int(config.typoMinCharacters...config.typoMaxCharacters) {
-        if let wrong = randomWordTypo(for: word, rng: &rng, telexProbability: config.telexTypoProbability) {
-            displayed = wrong
-            correction = (wrong: displayed, correct: word)
-            typosThisHistoryCycle += 1
-            charactersSinceTypo = 0
-        }
-    }
-    for character in displayed { typeCharacter(character) }
-    charactersSinceTypo += word.count
-    guard let correction, !stopRequested else { return }
+func correctPhrase(wrong: String, correct: String) {
+    guard !stopRequested else { return }
 
     // Randomize whether the history pause happens before or after correction.
     let saveBeforeCorrection = rng.unit() < config.historyBeforeCorrectionProbability
     if saveBeforeCorrection {
-        print("\nĐang lưu phiên bản trước khi sửa ‘\(correction.wrong)’…")
+        print("\nĐang lưu phiên bản trước khi sửa ‘\(wrong)’…")
         pumpEvents(for: config.waitBeforeHistory)
         if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
         if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
     }
     guard !stopRequested else { return }
 
-    for _ in correction.wrong {
+    for _ in wrong {
         postKey(code: 51) // Backspace
         pumpEvents(for: rng.between(baseDelay * 0.55, baseDelay * 1.2))
     }
-    for character in correction.correct {
+    for character in correct {
         postText(String(character))
         pumpEvents(for: naturalDelay(after: character, base: baseDelay, burst: burstFactor, rng: &rng))
     }
     if !stopRequested && !saveBeforeCorrection {
-        print("\nĐang lưu phiên bản sau khi sửa ‘\(correction.correct)’…")
+        print("\nĐang lưu phiên bản sau khi sửa ‘\(correct)’…")
         pumpEvents(for: config.waitBeforeHistory)
         if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
         if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
@@ -790,17 +781,62 @@ func typeWord(_ word: String) {
 }
 
 func typeString(_ text: String) {
-    var word = ""
+    var tokens: [(value: String, isWord: Bool)] = []
+    var buffer = ""
+    var bufferIsWord: Bool?
     for character in text {
-        if character.isWhitespace {
-            typeWord(word)
-            word = ""
-            typeCharacter(character)
-        } else {
-            word.append(character)
+        let isWord = !character.isWhitespace
+        if let current = bufferIsWord, current != isWord {
+            tokens.append((buffer, current))
+            buffer = ""
         }
+        bufferIsWord = isWord
+        buffer.append(character)
     }
-    typeWord(word)
+    if let current = bufferIsWord { tokens.append((buffer, current)) }
+
+    var index = 0
+    while index < tokens.count && !stopRequested {
+        guard tokens[index].isWord else {
+            for character in tokens[index].value { typeCharacter(character) }
+            index += 1
+            continue
+        }
+        let shouldMistype = config.errorRate > 0 && typosThisHistoryCycle < targetTyposThisHistoryCycle &&
+            charactersSinceTypo >= rng.int(config.typoMinCharacters...config.typoMaxCharacters)
+        guard shouldMistype else {
+            for character in tokens[index].value { typeCharacter(character) }
+            charactersSinceTypo += tokens[index].value.count
+            index += 1
+            continue
+        }
+        let targetWords = rng.int(config.typoPhraseMinWords...config.typoPhraseMaxWords)
+        var end = index
+        var wordCount = 0
+        var correct = ""
+        var wrong = ""
+        while end < tokens.count && wordCount < targetWords {
+            let token = tokens[end]
+            correct += token.value
+            if token.isWord {
+                wrong += randomWordTypo(for: token.value, rng: &rng, telexProbability: config.telexTypoProbability) ?? token.value
+                wordCount += 1
+            } else {
+                wrong += token.value
+            }
+            end += 1
+        }
+        if wrong != correct {
+            for character in wrong { typeCharacter(character) }
+            typosThisHistoryCycle += 1
+            charactersSinceTypo = 0
+            correctPhrase(wrong: wrong, correct: correct)
+        } else {
+            for character in correct { typeCharacter(character) }
+        }
+        charactersSinceTypo += correct.count
+        index = end
+    }
 }
 
 documentLoop: for part in documentParts {

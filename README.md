@@ -31,6 +31,25 @@ Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ng�
 
 `xacSuatLoiTelex` (0–1, mặc định `0.75`) xác định xác suất dùng lỗi Telex cho từ tiếng Việt có dấu, chẳng hạn `chữ` thành `chuwx` và `này` thành `nayf`. Các lỗi còn lại được chọn ngẫu nhiên giữa lặp ký tự, thiếu ký tự, đảo hai ký tự kề nhau và phím gần nhau.
 
+`soTuCumSaiToiThieu` và `soTuCumSaiToiDa` đặt số từ trong một cụm sai. Ví dụ đặt `2` và `3` có thể tạo `chuwx nayf` trước khi xóa cả cụm và gõ lại `chữ này`.
+
+### Toàn bộ settings
+
+| Khóa | Ý nghĩa |
+| --- | --- |
+| `tocDoTuMoiPhut` | Tốc độ gõ WPM, từ 5 đến 1000. |
+| `demNguocGiay` | Thời gian để chuyển focus sang Google Docs. |
+| `batLoiCoY` / `tyLeLoiPhanTram` | Bật lỗi có chủ ý; đặt tỷ lệ về 0 để tắt. |
+| `batLuuLichSu` | Bật các lần nghỉ/lưu lịch sử định kỳ. |
+| `soKyTuLuuToiThieu` / `soKyTuLuuToiDa` | Khoảng ký tự ngẫu nhiên giữa các lần lưu định kỳ. |
+| `choTruocLuuGiay` / `xemLuuLichSuGiay` / `choSauLuuGiay` | Ba thời gian chờ của một lần mở lịch sử. |
+| `khoangKyTuLoiToiThieu` / `khoangKyTuLoiToiDa` | Khoảng ký tự ngẫu nhiên giữa các cụm sai. |
+| `soLoiMoiDotToiThieu` / `soLoiMoiDotToiDa` | Số cụm sai ngẫu nhiên trong mỗi đợt. |
+| `soTuCumSaiToiThieu` / `soTuCumSaiToiDa` | Số từ trong một cụm sai. |
+| `xacSuatLoiTelex` | Tỷ lệ dùng lỗi Telex thay vì lỗi bàn phím khác. |
+| `xacSuatLuuTruocKhiSua` | Tỷ lệ lưu lịch sử trước khi xóa và gõ lại cụm đúng. |
+| `chiGoVanBan` | Chế độ gõ đều thuần túy: không lỗi, không lưu, không sửa. |
+
 ## Chỉ gõ văn bản
 
 Để gõ thuần văn bản, không lỗi có chủ ý, không lưu lịch sử và không thao tác sửa, truyền tốc độ ngay sau tên file:
