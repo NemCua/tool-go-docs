@@ -671,8 +671,14 @@ var pendingCorrections: [(wrong: String, correct: String)] = []
 var charactersSinceTypo = 0
 var typosThisHistoryCycle = 0
 var targetTyposThisHistoryCycle = rng.int(config.typosMinPerHistory...config.typosMaxPerHistory)
+private let resumeMarker = "[[HTYPER_RESUME_4D91C8]]"
 
 func applyPendingCorrections() {
+    // Keep a unique marker at the exact insertion point. Find & replace
+    // normally returns the caret to the last matched typo, not where typing
+    // paused. Replacing this marker with nothing restores that position.
+    postText(resumeMarker)
+    pumpEvents(for: config.findReplaceStepSeconds)
     // A single Replace all fixes every occurrence of the same typo.
     var handled = Set<String>()
     for correction in pendingCorrections where !stopRequested {
@@ -681,9 +687,9 @@ func applyPendingCorrections() {
         replaceAllInGoogleDocs(wrong: correction.wrong, correct: correction.correct)
     }
     pendingCorrections.removeAll()
-    // Closing the dialog through its X returns focus to the original Docs
-    // insertion point. Do not send Command+End: Chrome/macOS may interpret
-    // that synthetic shortcut as an unrelated browser command.
+    if !stopRequested {
+        replaceAllInGoogleDocs(wrong: resumeMarker, correct: "")
+    }
 }
 
 func typeCharacter(_ character: Character) {
