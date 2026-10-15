@@ -548,10 +548,11 @@ private func replaceAllInGoogleDocs(wrong: String, correct: String) {
     postKey(code: 36) // Enter: Thay thế tất cả
     pumpEvents(for: config.findReplaceApplySeconds)
     // Escape is unreliable in this Google Docs modal. From the Replace all
-    // button, one Tab reaches the close (X) control; activate it with Enter.
+    // button, one Tab reaches the close (X) control. Space activates a
+    // focused button without leaking an Enter/newline into the document.
     postKey(code: 48)
     pumpEvents(for: config.findReplaceStepSeconds)
-    postKey(code: 36)
+    postKey(code: 49) // Space
     pumpEvents(for: config.findReplaceStepSeconds)
 }
 
