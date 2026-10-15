@@ -103,3 +103,11 @@ Không dùng công thức LaTex quá phức tạp, macro tự định nghĩa, �
 ```sh
 ./run.sh ten-file
 ```
+
+## 7. Preview trước khi gõ
+
+Chạy `npm run web`, mở `http://localhost:4173` rồi chọn **Preview tài liệu**. Bấm **Nạp testText.txt**, **Chọn tệp**, hoặc dán trực tiếp nội dung; sau đó bấm **Cập nhật preview** để xem bản mô phỏng dạng trang giấy. Preview dùng cùng quy tắc chuyển đổi với bản macOS: directive, bảng, `\\frac`, `\\boxed`, ký hiệu và chỉ số dưới; đây là kiểm tra trước khi chạy, không thay thế kiểm tra Google Docs thật.
+
+## 8. Bảng tiến độ khi chạy trên macOS
+
+Khi chạy bình thường, một bảng tiến độ native hiện ở góc phải: trạng thái, số ký tự còn lại và thời gian ước tính theo WPM. Nút **−** chỉ ẩn bảng và vẫn tiếp tục gõ; nút **×** ẩn bảng đồng thời dừng HumanTyper. Bảng tự đóng khi hoàn tất. Nó không lấy focus khỏi Google Docs.

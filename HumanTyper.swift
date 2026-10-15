@@ -1,7 +1,9 @@
 import ApplicationServices
+import AppKit
 import Foundation
 
 private var stopRequested = false
+private var progressOverlay: ProgressOverlay?
 private let mainDisplayBounds = CGDisplayBounds(CGMainDisplayID())
 private let generatedEventMarker: Int64 = 0x48545950 // "HTYP"
 private let emergencyStopModifiers: CGEventFlags = [.maskControl, .maskAlternate, .maskCommand]
@@ -31,6 +33,109 @@ struct Config {
     var typoPhraseMaxWords = 3
     var naturalRhythm = true
     var seed: UInt64?
+}
+
+// A non-activating panel keeps Google Docs focused while HumanTyper shows
+// progress. The minus button hides only this panel; the close button stops
+// typing immediately and closes it.
+private final class ProgressOverlay: NSObject {
+    private let panel: NSPanel
+    private let statusLabel = NSTextField(labelWithString: "")
+    private let detailLabel = NSTextField(labelWithString: "")
+    private let total: Int
+    private let wpm: Double
+    private var lastDraw = Date.distantPast
+    private var lastStatus = ""
+
+    init(total: Int, wpm: Double) {
+        self.total = total
+        self.wpm = wpm
+        panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 292, height: 112),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        super.init()
+        panel.isOpaque = true
+        panel.backgroundColor = NSColor(calibratedWhite: 0.10, alpha: 0.96)
+        panel.level = .floating
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.hidesOnDeactivate = false
+        panel.isMovableByWindowBackground = true
+        panel.hasShadow = true
+
+        let content = NSView()
+        content.wantsLayer = true
+        content.layer?.cornerRadius = 14
+        content.layer?.masksToBounds = true
+        panel.contentView = content
+        statusLabel.font = .systemFont(ofSize: 15, weight: .semibold)
+        statusLabel.textColor = .white
+        detailLabel.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        detailLabel.textColor = NSColor.white.withAlphaComponent(0.72)
+
+        let hideButton = makeButton(title: "−", action: #selector(hidePanel))
+        let stopButton = makeButton(title: "×", action: #selector(stopAndClose))
+        stopButton.contentTintColor = NSColor.systemRed
+        for view in [statusLabel, detailLabel, hideButton, stopButton] {
+            view.translatesAutoresizingMaskIntoConstraints = false
+            content.addSubview(view)
+        }
+        NSLayoutConstraint.activate([
+            statusLabel.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
+            statusLabel.topAnchor.constraint(equalTo: content.topAnchor, constant: 18),
+            statusLabel.trailingAnchor.constraint(lessThanOrEqualTo: hideButton.leadingAnchor, constant: -10),
+            detailLabel.leadingAnchor.constraint(equalTo: statusLabel.leadingAnchor),
+            detailLabel.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 10),
+            hideButton.topAnchor.constraint(equalTo: content.topAnchor, constant: 12),
+            hideButton.trailingAnchor.constraint(equalTo: stopButton.leadingAnchor, constant: -3),
+            hideButton.widthAnchor.constraint(equalToConstant: 29),
+            hideButton.heightAnchor.constraint(equalToConstant: 27),
+            stopButton.topAnchor.constraint(equalTo: hideButton.topAnchor),
+            stopButton.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -12),
+            stopButton.widthAnchor.constraint(equalToConstant: 29),
+            stopButton.heightAnchor.constraint(equalToConstant: 27)
+        ])
+    }
+
+    private func makeButton(title: String, action: Selector) -> NSButton {
+        let button = NSButton(title: title, target: self, action: action)
+        button.isBordered = false
+        button.font = .systemFont(ofSize: 20, weight: .medium)
+        button.bezelStyle = .regularSquare
+        return button
+    }
+
+    func show(status: String, typed: Int = 0) {
+        let screen = NSScreen.main?.visibleFrame ?? .zero
+        let size = panel.frame.size
+        panel.setFrameOrigin(NSPoint(x: screen.maxX - size.width - 18, y: screen.maxY - size.height - 18))
+        update(status: status, typed: typed, force: true)
+        panel.orderFrontRegardless()
+    }
+
+    func update(status: String, typed: Int, force: Bool = false) {
+        guard panel.isVisible else { return }
+        let now = Date()
+        guard force || status != lastStatus || now.timeIntervalSince(lastDraw) >= 0.12 else { return }
+        lastDraw = now
+        lastStatus = status
+        let remaining = max(0, total - typed)
+        statusLabel.stringValue = status
+        detailLabel.stringValue = "\(remaining) ký tự còn lại  •  ~\(format(seconds: Double(remaining) / max(1, wpm * 5)))"
+    }
+
+    func close() { panel.orderOut(nil) }
+    @objc private func hidePanel() { panel.orderOut(nil) }
+    @objc private func stopAndClose() {
+        stopRequested = true
+        close()
+    }
+    private func format(seconds: Double) -> String {
+        let rounded = max(0, Int(seconds.rounded()))
+        return String(format: "%02d:%02d", rounded / 60, rounded % 60)
+    }
 }
 
 struct RNG: RandomNumberGenerator {
@@ -715,10 +820,15 @@ guard installSafetyMonitor() != nil else {
     fail("không tạo được bộ dừng an toàn; kiểm tra quyền Accessibility")
 }
 
+NSApplication.shared.setActivationPolicy(.accessory)
+progressOverlay = ProgressOverlay(total: textCharacterCount, wpm: config.wpm)
+progressOverlay?.show(status: config.countdown > 0 ? "Chuẩn bị bắt đầu" : "Đang gõ")
+
 if config.countdown > 0 {
     for second in stride(from: config.countdown, through: 1, by: -1) {
         print("Bắt đầu sau \(second)…", terminator: "\r")
         fflush(stdout)
+        progressOverlay?.update(status: "Bắt đầu sau \(second) giây", typed: 0, force: true)
         pumpEvents(for: 1)
         if stopRequested { break }
     }
@@ -749,6 +859,7 @@ func typeCharacter(_ character: Character) {
     postText(String(character))
     typed += 1
     typedSinceLongPause += 1
+    progressOverlay?.update(status: "Đang gõ", typed: typed)
     // Plain mode is deliberately constant: no punctuation pauses, bursts, or
     // random breaks—only the delay required by the selected WPM.
     let delay = !config.naturalRhythm
@@ -759,13 +870,16 @@ func typeCharacter(_ character: Character) {
     if config.longPauses && config.visitHistoryDuringPauses && typedSinceLongPause >= nextLongPauseAt && !stopRequested {
         longPauseCount += 1
         print("\nLần nghỉ \(longPauseCount) tại ký tự \(typed): đang chờ \(config.waitBeforeHistory) giây trước khi mở lịch sử…")
+        progressOverlay?.update(status: "Đang chờ trước khi lưu", typed: typed, force: true)
         pumpEvents(for: config.waitBeforeHistory)
         if !stopRequested {
             print("Đang mở lịch sử phiên bản rồi quay lại…")
+            progressOverlay?.update(status: "Đang xem lịch sử phiên bản", typed: typed, force: true)
             visitGoogleDocsVersionHistory(viewTime: config.historyViewTime)
         }
         if !stopRequested {
             print("Đang nghỉ thêm \(config.waitAfterHistory) giây trước khi tiếp tục gõ…")
+            progressOverlay?.update(status: "Đang chờ để tiếp tục gõ", typed: typed, force: true)
             pumpEvents(for: config.waitAfterHistory)
         }
         typedSinceLongPause = 0
@@ -783,6 +897,7 @@ func correctPhrase(wrong: String, correct: String) {
     let saveBeforeCorrection = rng.unit() < config.historyBeforeCorrectionProbability
     if saveBeforeCorrection {
         print("\nĐang lưu phiên bản trước khi sửa ‘\(wrong)’…")
+        progressOverlay?.update(status: "Đang lưu trước khi sửa lỗi", typed: typed, force: true)
         pumpEvents(for: config.waitBeforeHistory)
         if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
         if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
@@ -793,12 +908,18 @@ func correctPhrase(wrong: String, correct: String) {
         postKey(code: 51) // Backspace
         pumpEvents(for: rng.between(baseDelay * 0.55, baseDelay * 1.2))
     }
+    // The panel reports final document characters, not transient typo text.
+    typed = max(0, typed - wrong.count)
+    progressOverlay?.update(status: "Đang sửa lỗi gõ", typed: typed, force: true)
     for character in correct {
         postText(String(character))
+        typed += 1
+        progressOverlay?.update(status: "Đang sửa lỗi gõ", typed: typed)
         pumpEvents(for: naturalDelay(after: character, base: baseDelay, burst: burstFactor, rng: &rng))
     }
     if !stopRequested && !saveBeforeCorrection {
         print("\nĐang lưu phiên bản sau khi sửa ‘\(correct)’…")
+        progressOverlay?.update(status: "Đang lưu sau khi sửa lỗi", typed: typed, force: true)
         pumpEvents(for: config.waitBeforeHistory)
         if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
         if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
@@ -875,15 +996,18 @@ documentLoop: for part in documentParts {
         typeString(text)
     case .manualCorrection(let wrong, let correct):
         print("\nĐang xử lý lỗi thủ công ‘\(wrong)’ → ‘\(correct)’…")
+        progressOverlay?.update(status: "Đang xử lý lỗi thủ công", typed: typed, force: true)
         typeLiteral(wrong)
         correctPhrase(wrong: wrong, correct: correct)
     case .save:
         print("\nĐang lưu lịch sử theo directive {save}…")
+        progressOverlay?.update(status: "Đang lưu lịch sử", typed: typed, force: true)
         pumpEvents(for: config.waitBeforeHistory)
         if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
         if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
     case .table(let rows, let columns, let cells):
         print("\nĐang tạo bảng \(rows)x\(columns)…")
+        progressOverlay?.update(status: "Đang tạo bảng \(rows)x\(columns)", typed: typed, force: true)
         createGoogleDocsTable(rows: rows, columns: columns, positionAtStart: !config.tableOnly)
         if config.tableOnly {
             print("Đã tạo bảng; không điều hướng hoặc nhập nội dung để kiểm tra focus.")
@@ -908,7 +1032,9 @@ documentLoop: for part in documentParts {
 }
 
 if stopRequested {
+    progressOverlay?.close()
     print("\nĐã dừng an toàn sau \(typed)/\(textCharacterCount) ký tự.")
     exit(130)
 }
+progressOverlay?.close()
 print("\nHoàn tất: đã gõ \(typed) ký tự.")
