@@ -2,4 +2,6 @@ human-typer
 *.exe
 *.pdb
 .DS_Store
+**/bin/
+**/obj/
 

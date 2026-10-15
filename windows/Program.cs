@@ -48,7 +48,7 @@ class Program {
         var files = Directory.GetFiles(input, "*.txt");
         var file = requested == null ? files.SingleOrDefault() : files.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals(requested, StringComparison.OrdinalIgnoreCase));
         if (file == null) Fail("Hãy chỉ định một file .txt trong input/.");
-        var text = File.ReadAllText(file);
+        var text = File.ReadAllText(file!);
         Console.WriteLine($"Đã đọc {text.Length} ký tự từ {Path.GetFileName(file)}.");
         if (dryRun) { Console.WriteLine($"Ước tính {text.Length / (settings.Wpm * 5) * 60:0.0} giây."); return; }
         for (var i = settings.CountdownSeconds; i > 0; i--) { Console.Write($"Bắt đầu sau {i}…\r"); Thread.Sleep(1000); }
