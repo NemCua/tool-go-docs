@@ -14,5 +14,6 @@
   "soLoiMoiDotToiThieu": 2,
   "soLoiMoiDotToiDa": 3,
   "xacSuatLoiTelex": 0.75,
-  "xacSuatLuuTruocKhiSua": 0.5
+  "xacSuatLuuTruocKhiSua": 0.5,
+  "chiGoVanBan": false
 }

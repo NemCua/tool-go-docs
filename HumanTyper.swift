@@ -27,6 +27,7 @@ struct Config {
     var typosMaxPerHistory = 3
     var telexTypoProbability = 0.75
     var historyBeforeCorrectionProbability = 0.5
+    var plainTypingOnly = false
     var seed: UInt64?
 }
 
@@ -75,7 +76,7 @@ private func usage() -> Never {
     HumanTyper — mô phỏng nhịp đánh máy trên macOS
 
     Cách dùng:
-      ./human-typer [TÊN_FILE] [--wpm 120] [--error-rate 2.5] [--countdown 15]
+      ./human-typer [TÊN_FILE] [TỐC_ĐỘ] [--wpm 120] [--error-rate 2.5] [--countdown 15]
 
     Tuỳ chọn:
       --wpm N          Tốc độ trung bình, mặc định 120
@@ -84,6 +85,7 @@ private func usage() -> Never {
       --seed N         Cố định chuỗi ngẫu nhiên để chạy lặp lại
       --no-errors      Không cố ý gõ sai
       --no-history     Không tự mở lịch sử phiên bản và nghỉ dài
+      --only-type      Chỉ gõ văn bản, không lỗi hoặc lưu lịch sử
       --dry-run        Chỉ đọc và thống kê file, không gửi phím
       --table-only     Chỉ tạo bảng rồi dừng để kiểm tra vị trí focus
       --position-only  Tạo bảng, nhấn Lên để về hàng đầu rồi dừng
@@ -124,7 +126,13 @@ private func loadSettings(into config: inout Config) {
     if let n = json["soLoiMoiDotToiDa"] as? Int { config.typosMaxPerHistory = n }
     if let n = json["xacSuatLoiTelex"] as? Double { config.telexTypoProbability = n }
     if let n = json["xacSuatLuuTruocKhiSua"] as? Double { config.historyBeforeCorrectionProbability = n }
-    guard config.wpm >= 5, config.wpm <= 300, config.errorRate >= 0, config.errorRate <= 0.3,
+    if let n = json["chiGoVanBan"] as? Bool { config.plainTypingOnly = n }
+    if config.plainTypingOnly {
+        config.errorRate = 0
+        config.longPauses = false
+        config.visitHistoryDuringPauses = false
+    }
+    guard config.wpm >= 5, config.wpm <= 1000, config.errorRate >= 0, config.errorRate <= 0.3,
           config.countdown >= 0, config.countdown <= 60, config.historyMinCharacters >= 1,
           config.historyMaxCharacters >= config.historyMinCharacters, config.waitBeforeHistory >= 0,
           config.historyViewTime >= 0, config.waitAfterHistory >= 0, config.typoMinCharacters >= 1,
@@ -148,6 +156,11 @@ private func parseArguments() -> Config {
         case "--no-errors": config.errorRate = 0
         case "--no-long-pauses": config.longPauses = false
         case "--no-history": config.visitHistoryDuringPauses = false
+        case "--only-type":
+            config.plainTypingOnly = true
+            config.errorRate = 0
+            config.longPauses = false
+            config.visitHistoryDuringPauses = false
         case "--dry-run": config.dryRun = true
         case "--table-only": config.tableOnly = true
         case "--position-only": config.positionOnly = true
@@ -157,7 +170,7 @@ private func parseArguments() -> Config {
             let value = args[i]
             switch arg {
             case "--wpm":
-                guard let n = Double(value), n >= 5, n <= 300 else { fail("--wpm phải từ 5 đến 300") }
+                guard let n = Double(value), n >= 5, n <= 1000 else { fail("--wpm phải từ 5 đến 1000") }
                 config.wpm = n
             case "--error-rate":
                 guard let n = Double(value), n >= 0, n <= 30 else { fail("--error-rate phải từ 0 đến 30") }
@@ -171,8 +184,17 @@ private func parseArguments() -> Config {
             }
         default:
             if arg.hasPrefix("-") { fail("tuỳ chọn không hợp lệ: \(arg)") }
-            if config.fileName != nil { fail("chỉ được chọn một file .txt") }
-            config.fileName = arg
+            if config.fileName == nil {
+                config.fileName = arg
+            } else if let n = Double(arg), n >= 5, n <= 1000 {
+                config.wpm = n
+                config.plainTypingOnly = true
+                config.errorRate = 0
+                config.longPauses = false
+                config.visitHistoryDuringPauses = false
+            } else {
+                fail("sau tên file chỉ được đặt tốc độ từ 5 đến 1000")
+            }
         }
         i += 1
     }

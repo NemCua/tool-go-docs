@@ -31,6 +31,20 @@ Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ng�
 
 `xacSuatLoiTelex` (0–1, mặc định `0.75`) xác định xác suất dùng lỗi Telex cho từ tiếng Việt có dấu, chẳng hạn `chữ` thành `chuwx` và `này` thành `nayf`. Các lỗi còn lại được chọn ngẫu nhiên giữa lặp ký tự, thiếu ký tự, đảo hai ký tự kề nhau và phím gần nhau.
 
+## Chỉ gõ văn bản
+
+Để gõ thuần văn bản, không lỗi có chủ ý, không lưu lịch sử và không thao tác sửa, truyền tốc độ ngay sau tên file:
+
+```sh
+./run.sh testText 500
+```
+
+Lệnh trên đọc `input/testText.txt` và gõ ở 500 WPM. Hoặc đặt `"chiGoVanBan": true` trong `settings.json`, rồi chạy ngắn gọn:
+
+```sh
+./run.sh testText
+```
+
 ## Kiểm tra mà không gửi phím
 
 ```sh
