@@ -26,6 +26,7 @@ struct Config {
     var typosMinPerHistory = 1
     var typosMaxPerHistory = 3
     var telexTypoProbability = 0.75
+    var historyBeforeCorrectionProbability = 0.5
     var seed: UInt64?
 }
 
@@ -107,28 +108,30 @@ private func loadSettings(into config: inout Config) {
     guard let data = try? Data(contentsOf: url), let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
         fail("settings.json không phải JSON hợp lệ")
     }
-    if let n = json["wpm"] as? Double { config.wpm = n }
-    if let n = json["errorRatePercent"] as? Double { config.errorRate = n / 100 }
-    if let n = json["countdownSeconds"] as? Int { config.countdown = n }
-    if let n = json["intentionalTypos"] as? Bool, !n { config.errorRate = 0 }
-    if let n = json["historyEnabled"] as? Bool { config.visitHistoryDuringPauses = n }
-    if let n = json["historyMinCharacters"] as? Int { config.historyMinCharacters = n }
-    if let n = json["historyMaxCharacters"] as? Int { config.historyMaxCharacters = n }
-    if let n = json["waitBeforeHistorySeconds"] as? Double { config.waitBeforeHistory = n }
-    if let n = json["historyViewSeconds"] as? Double { config.historyViewTime = n }
-    if let n = json["waitAfterHistorySeconds"] as? Double { config.waitAfterHistory = n }
-    if let n = json["typoMinCharacters"] as? Int { config.typoMinCharacters = n }
-    if let n = json["typoMaxCharacters"] as? Int { config.typoMaxCharacters = n }
-    if let n = json["typosMinPerHistory"] as? Int { config.typosMinPerHistory = n }
-    if let n = json["typosMaxPerHistory"] as? Int { config.typosMaxPerHistory = n }
-    if let n = json["telexTypoProbability"] as? Double { config.telexTypoProbability = n }
+    if let n = json["tocDoTuMoiPhut"] as? Double { config.wpm = n }
+    if let n = json["tyLeLoiPhanTram"] as? Double { config.errorRate = n / 100 }
+    if let n = json["demNguocGiay"] as? Int { config.countdown = n }
+    if let n = json["batLoiCoY"] as? Bool, !n { config.errorRate = 0 }
+    if let n = json["batLuuLichSu"] as? Bool { config.visitHistoryDuringPauses = n }
+    if let n = json["soKyTuLuuToiThieu"] as? Int { config.historyMinCharacters = n }
+    if let n = json["soKyTuLuuToiDa"] as? Int { config.historyMaxCharacters = n }
+    if let n = json["choTruocLuuGiay"] as? Double { config.waitBeforeHistory = n }
+    if let n = json["xemLuuLichSuGiay"] as? Double { config.historyViewTime = n }
+    if let n = json["choSauLuuGiay"] as? Double { config.waitAfterHistory = n }
+    if let n = json["khoangKyTuLoiToiThieu"] as? Int { config.typoMinCharacters = n }
+    if let n = json["khoangKyTuLoiToiDa"] as? Int { config.typoMaxCharacters = n }
+    if let n = json["soLoiMoiDotToiThieu"] as? Int { config.typosMinPerHistory = n }
+    if let n = json["soLoiMoiDotToiDa"] as? Int { config.typosMaxPerHistory = n }
+    if let n = json["xacSuatLoiTelex"] as? Double { config.telexTypoProbability = n }
+    if let n = json["xacSuatLuuTruocKhiSua"] as? Double { config.historyBeforeCorrectionProbability = n }
     guard config.wpm >= 5, config.wpm <= 300, config.errorRate >= 0, config.errorRate <= 0.3,
           config.countdown >= 0, config.countdown <= 60, config.historyMinCharacters >= 1,
           config.historyMaxCharacters >= config.historyMinCharacters, config.waitBeforeHistory >= 0,
           config.historyViewTime >= 0, config.waitAfterHistory >= 0, config.typoMinCharacters >= 1,
           config.typoMaxCharacters >= config.typoMinCharacters, config.typosMinPerHistory >= 0,
           config.typosMaxPerHistory >= config.typosMinPerHistory, config.telexTypoProbability >= 0,
-          config.telexTypoProbability <= 1 else {
+          config.telexTypoProbability <= 1, config.historyBeforeCorrectionProbability >= 0,
+          config.historyBeforeCorrectionProbability <= 1 else {
         fail("một hoặc nhiều giá trị trong settings.json nằm ngoài phạm vi hợp lệ")
     }
 }
@@ -733,12 +736,14 @@ func typeWord(_ word: String) {
     charactersSinceTypo += word.count
     guard let correction, !stopRequested else { return }
 
-    // Correct immediately after the deliberately wrong word: let Docs save a
-    // visible version first, then remove exactly the wrong word and retype it.
-    print("\nĐang lưu phiên bản trước khi sửa ‘\(correction.wrong)’…")
-    pumpEvents(for: config.waitBeforeHistory)
-    if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
-    if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
+    // Randomize whether the history pause happens before or after correction.
+    let saveBeforeCorrection = rng.unit() < config.historyBeforeCorrectionProbability
+    if saveBeforeCorrection {
+        print("\nĐang lưu phiên bản trước khi sửa ‘\(correction.wrong)’…")
+        pumpEvents(for: config.waitBeforeHistory)
+        if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
+        if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
+    }
     guard !stopRequested else { return }
 
     for _ in correction.wrong {
@@ -748,6 +753,12 @@ func typeWord(_ word: String) {
     for character in correction.correct {
         postText(String(character))
         pumpEvents(for: naturalDelay(after: character, base: baseDelay, burst: burstFactor, rng: &rng))
+    }
+    if !stopRequested && !saveBeforeCorrection {
+        print("\nĐang lưu phiên bản sau khi sửa ‘\(correction.correct)’…")
+        pumpEvents(for: config.waitBeforeHistory)
+        if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
+        if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
     }
 }
 

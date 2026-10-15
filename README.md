@@ -27,9 +27,9 @@ Nếu không truyền tên, thư mục phải chứa đúng một file `.txt`.
 
 ## Cấu hình
 
-Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ngược, lỗi gõ và chu kỳ lịch sử. `typoMinCharacters`/`typoMaxCharacters` là khoảng ký tự giữa các lỗi; `typosMinPerHistory`/`typosMaxPerHistory` là số cụm sai ngẫu nhiên trước mỗi lần lưu. Mỗi lỗi được sửa ngay sau một chu kỳ lịch sử: chờ trước khi mở lịch sử, xem lịch sử, chờ sau đó, Backspace phần sai và gõ lại phần đúng.
+Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ngược, lỗi gõ và chu kỳ lịch sử. Toàn bộ khóa dùng tiếng Việt camelCase. `khoangKyTuLoiToiThieu`/`khoangKyTuLoiToiDa` là khoảng ký tự giữa các lỗi; `soLoiMoiDotToiThieu`/`soLoiMoiDotToiDa` là số lỗi ngẫu nhiên trong một đợt. `xacSuatLuuTruocKhiSua: 0.5` nghĩa là 50% lưu lịch sử trước khi sửa, 50% sửa trước rồi mới lưu.
 
-`telexTypoProbability` (0–1, mặc định `0.75`) xác định xác suất dùng lỗi Telex cho từ tiếng Việt có dấu, chẳng hạn `chữ` thành `chuwx` và `này` thành `nayf`. Các lỗi còn lại được chọn ngẫu nhiên giữa lặp ký tự, thiếu ký tự, đảo hai ký tự kề nhau và phím gần nhau.
+`xacSuatLoiTelex` (0–1, mặc định `0.75`) xác định xác suất dùng lỗi Telex cho từ tiếng Việt có dấu, chẳng hạn `chữ` thành `chuwx` và `này` thành `nayf`. Các lỗi còn lại được chọn ngẫu nhiên giữa lặp ký tự, thiếu ký tự, đảo hai ký tự kề nhau và phím gần nhau.
 
 ## Kiểm tra mà không gửi phím
 
