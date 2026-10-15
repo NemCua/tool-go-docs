@@ -15,11 +15,13 @@
   "soLoiMoiDotToiDa": 3,
   "xacSuatLoiTelex": 0.75,
   "xacSuatLuuTruocKhiSua": 0.5,
+  "chiGoVanBan": false,
   "soTuCumSaiToiThieu": 1,
   "soTuCumSaiToiDa": 3,
   "batNhipTuNhien": true,
   "_chuThich": {
     "batNhipTuNhien": "Bật nhịp nhanh/chậm, nghỉ dấu câu và khựng ngẫu nhiên. Tắt để gõ đều theo WPM.",
+    "chiGoVanBan": "Chỉ gõ văn bản, không lỗi, không lưu lịch sử và không sửa.",
     "soTuCumSaiToiThieu": "Số từ ít nhất trong một cụm lỗi.",
     "soTuCumSaiToiDa": "Số từ nhiều nhất trong một cụm lỗi."
   }
