@@ -125,4 +125,6 @@ Bản Windows dùng cùng `settings.json` và cú pháp input với macOS, gồm
 
 Các yêu cầu môi trường Windows/cloud (SDK hoặc bản self-contained, desktop tương tác, quyền ứng dụng, Version history, trình duyệt và mạng) nằm tại [windows/REQUIREMENTS.md](windows/REQUIREMENTS.md).
 
+Lệnh cài nhanh trên máy Windows mới hoặc cloud, tự kiểm tra Git và .NET trước khi cài, nằm tại [windows/CAI-DAT-MAY-MOI.md](windows/CAI-DAT-MAY-MOI.md).
+
 Khi thay đổi cú pháp hoặc hành vi, cập nhật đồng thời README này và [chuyen-doi-text.md](chuyen-doi-text.md).

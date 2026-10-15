@@ -2,7 +2,7 @@
 
 Yêu cầu Windows 10/11 và .NET 8 SDK khi chạy từ source.
 
-Xem checklist đầy đủ về máy cloud, quyền, trình duyệt, Google Docs, Version history và đóng gói tại [REQUIREMENTS.md](REQUIREMENTS.md).
+Xem checklist đầy đủ về máy cloud, quyền, trình duyệt, Google Docs, Version history và đóng gói tại [REQUIREMENTS.md](REQUIREMENTS.md). Cài nhanh trên máy mới/máy cloud, có kiểm tra Git/winget/.NET tự động, xem [CAI-DAT-MAY-MOI.md](CAI-DAT-MAY-MOI.md).
 
 ## Chạy
 

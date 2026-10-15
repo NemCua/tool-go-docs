@@ -48,6 +48,8 @@ dotnet run --project windows -- ten-file
 
 Nếu file có bảng, Google Docs trên Windows hiện cần đặt ngôn ngữ giao diện là tiếng Việt để Tool Finder nhận đúng tên lệnh bảng.
 
+Hướng dẫn cài HumanTyper trên máy Windows mới hoặc cloud nằm tại [windows/CAI-DAT-MAY-MOI.md](windows/CAI-DAT-MAY-MOI.md).
+
 Khi kiểm tra directive `[sai, đúng]` trên Windows, có thể đặt `batLuuLichSu: false` trong `settings.json` nếu tài khoản Google Docs không mở được Version history bằng `Ctrl + Alt + Shift + H`; công cụ vẫn xóa phần sai và gõ lại phần đúng.
 
 ## Ví dụ chuyển đổi
