@@ -12,6 +12,7 @@ static class Native {
     [StructLayout(LayoutKind.Sequential)] struct KEYBDINPUT { public ushort wVk, wScan; public uint dwFlags, time; public IntPtr dwExtraInfo; }
     [StructLayout(LayoutKind.Sequential)] struct POINT { public int X, Y; }
     const uint INPUT_KEYBOARD = 1, KEYEVENTF_UNICODE = 4, KEYEVENTF_KEYUP = 2;
+    const uint KEYEVENTF_SCANCODE = 8;
     public static bool StopRequested() {
         // Pause/break is the emergency key; Ctrl+Alt+Shift+Esc is also accepted.
         if ((GetAsyncKeyState(0x13) & 0x8000) != 0) return true;
@@ -28,6 +29,16 @@ static class Native {
             };
             SendInput(2, input, Marshal.SizeOf<INPUT>());
         }
+    }
+    static void Key(ushort vk, bool up = false) {
+        var input = new[] { new INPUT { type = INPUT_KEYBOARD, ki = new KEYBDINPUT { wVk = vk, dwFlags = up ? KEYEVENTF_KEYUP : 0 } } };
+        SendInput(1, input, Marshal.SizeOf<INPUT>());
+    }
+    public static void Press(ushort vk) { Key(vk); Key(vk, true); }
+    public static void Shortcut(ushort key, params ushort[] modifiers) {
+        foreach (var m in modifiers) Key(m);
+        Press(key);
+        foreach (var m in modifiers.Reverse()) Key(m, true);
     }
 }
 
@@ -55,6 +66,8 @@ class Program {
         var delay = 60000 / (settings.Wpm * 5);
         foreach (var c in text) {
             if (Native.StopRequested()) { Console.WriteLine("\nĐã dừng khẩn cấp."); return; }
+            if (c == '\n') { Native.Press(0x0D); Thread.Sleep(80); continue; }
+            if (c == '\t') { Native.Press(0x09); Thread.Sleep(80); continue; }
             var output = c;
             if (settings.IntentionalTypos && Rng.NextDouble() < settings.ErrorRatePercent / 100 && Neighbours.TryGetValue(char.ToLower(c), out var n)) output = char.IsUpper(c) ? char.ToUpper(n[Rng.Next(n.Length)]) : n[Rng.Next(n.Length)];
             Native.Text(output.ToString());
