@@ -2,7 +2,9 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 
 record Settings(double Wpm = 120, double ErrorRatePercent = 2.5, int CountdownSeconds = 5,
-    bool IntentionalTypos = true, bool NaturalRhythm = true, bool HistoryEnabled = true);
+    bool IntentionalTypos = true, bool NaturalRhythm = true, bool HistoryEnabled = true,
+    int HistoryMin = 150, int HistoryMax = 250, int ErrorMin = 40, int ErrorMax = 90,
+    int SaveBefore = 5, int SaveView = 5, int SaveAfter = 5);
 
 static class Native {
     [DllImport("user32.dll", SetLastError = true)] static extern uint SendInput(uint n, INPUT[] p, int size);
@@ -58,7 +60,10 @@ class Program {
             CountdownSeconds: (int)Number("demNguocGiay", 5),
             IntentionalTypos: Flag("batLoiCoY", true),
             NaturalRhythm: Flag("batNhipTuNhien", true),
-            HistoryEnabled: Flag("batLuuLichSu", true));
+            HistoryEnabled: Flag("batLuuLichSu", true),
+            HistoryMin: (int)Number("soKyTuLuuToiThieu", 150), HistoryMax: (int)Number("soKyTuLuuToiDa", 250),
+            ErrorMin: (int)Number("khoangKyTuLoiToiThieu", 40), ErrorMax: (int)Number("khoangKyTuLoiToiDa", 90),
+            SaveBefore: (int)Number("choTruocLuuGiay", 5), SaveView: (int)Number("xemLuuLichSuGiay", 5), SaveAfter: (int)Number("choSauLuuGiay", 5));
     }
     static void Main(string[] args) {
         var projectRoot = Directory.GetCurrentDirectory();
@@ -75,9 +80,13 @@ class Program {
         if (file == null) Fail("Hãy chỉ định một file .txt trong input/.");
         var text = File.ReadAllText(file!);
         Console.WriteLine($"Đã đọc {text.Length} ký tự từ {Path.GetFileName(file)}.");
-        if (dryRun) { Console.WriteLine($"Ước tính {text.Length / (settings.Wpm * 5) * 60:0.0} giây."); return; }
+        var estimated = Estimate(text, settings);
+        if (dryRun) { Console.WriteLine($"Ước tính {estimated.TotalSeconds:0.0} giây."); return; }
+        using var overlay = new ProgressOverlay(text.Length);
         for (var i = settings.CountdownSeconds; i > 0; i--) { Console.Write($"Bắt đầu sau {i}…\r"); Thread.Sleep(1000); }
+        var started = DateTime.Now; overlay.Start(estimated);
         var delay = 60000 / (settings.Wpm * 5);
+        var typed = 0;
         foreach (var c in text) {
             if (Native.StopRequested()) { Console.WriteLine("\nĐã dừng khẩn cấp."); return; }
             if (c == '\n') { Native.Press(0x0D); Thread.Sleep(80); continue; }
@@ -85,12 +94,24 @@ class Program {
             var output = c;
             if (settings.IntentionalTypos && Rng.NextDouble() < settings.ErrorRatePercent / 100 && Neighbours.TryGetValue(char.ToLower(c), out var n)) output = char.IsUpper(c) ? char.ToUpper(n[Rng.Next(n.Length)]) : n[Rng.Next(n.Length)];
             Native.Text(output.ToString());
+            typed++;
             var wait = settings.NaturalRhythm
                 ? delay * (0.58 + Rng.NextDouble() * .9) + (c is ' ' ? 25 : 0)
                 : delay;
             Thread.Sleep(Math.Max(12, (int)wait));
+            overlay.Update(typed, text.Length, Estimate(text[(typed)..], settings));
         }
-        Console.WriteLine("\nHoàn tất.");
+        var actual = DateTime.Now - started;
+        overlay.Finish(typed, text.Length, actual);
+        Console.WriteLine($"\nHoàn tất: đã gõ {typed} ký tự trong {actual.TotalSeconds:0.0} giây.");
+        Thread.Sleep(4000);
+    }
+    static TimeSpan Estimate(string text, Settings settings) {
+        var baseSeconds = text.Length * 60 / Math.Max(1, settings.Wpm * 5);
+        var saveSeconds = settings.SaveBefore + settings.SaveView + settings.SaveAfter + .8;
+        var saves = settings.HistoryEnabled ? text.Length / Math.Max(1, (settings.HistoryMin + settings.HistoryMax) / 2.0) : 0;
+        var errors = settings.IntentionalTypos ? text.Length / Math.Max(1, (settings.ErrorMin + settings.ErrorMax) / 2.0) : 0;
+        return TimeSpan.FromSeconds(baseSeconds + saves * saveSeconds + errors * saveSeconds);
     }
     static void Fail(string message) { Console.Error.WriteLine("Lỗi: " + message); Environment.Exit(1); }
 }
