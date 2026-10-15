@@ -16,5 +16,6 @@
   "xacSuatLoiTelex": 0.75,
   "xacSuatLuuTruocKhiSua": 0.5,
   "soTuCumSaiToiThieu": 1,
-  "soTuCumSaiToiDa": 3
+  "soTuCumSaiToiDa": 3,
+  "batNhipTuNhien": true
 }
