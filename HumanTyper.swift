@@ -681,13 +681,9 @@ func applyPendingCorrections() {
         replaceAllInGoogleDocs(wrong: correction.wrong, correct: correction.correct)
     }
     pendingCorrections.removeAll()
-    // Find & replace returns the caret to a match. At a typing pause, the
-    // document ends at the current insertion point, so Command+End restores
-    // the place where automatic typing must resume.
-    if !stopRequested {
-        postShortcut(code: 119, flags: .maskCommand) // Command+End
-        pumpEvents(for: config.findReplaceStepSeconds)
-    }
+    // Closing the dialog through its X returns focus to the original Docs
+    // insertion point. Do not send Command+End: Chrome/macOS may interpret
+    // that synthetic shortcut as an unrelated browser command.
 }
 
 func typeCharacter(_ character: Character) {
