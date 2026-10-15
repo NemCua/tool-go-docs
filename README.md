@@ -1,5 +1,25 @@
 # HumanTyper cho macOS
 
+## Windows
+
+Bản Windows nằm trong thư mục `windows/` và yêu cầu [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
+
+Mở PowerShell tại thư mục dự án rồi chạy:
+
+```powershell
+dotnet run --project windows -- tsst
+```
+
+Nếu muốn kiểm tra file và ước tính thời gian mà không gửi phím:
+
+```powershell
+dotnet run --project windows -- --dry-run
+```
+
+Đặt file UTF-8 vào `input/`. Có thể chỉnh tốc độ, tỷ lệ lỗi và thời gian đếm ngược trong `settings.json`. Sau khi chạy, chuyển sang Google Docs trong thời gian đếm ngược; chương trình sẽ nhập vào cửa sổ đang được chọn.
+
+Phím dừng khẩn cấp trên Windows: `Pause/Break`, `Ctrl+Alt+Shift+Esc`, hoặc đưa chuột vào góc trên-trái màn hình. Bản Windows dùng `Ctrl`/`Alt`/`Shift` thay cho `Command`/`Option` của macOS. Chi tiết xem tại [windows/README.md](windows/README.md).
+
 CLI nhập lại nội dung của file UTF-8 bằng sự kiện bàn phím macOS, với tốc độ biến thiên và lỗi đánh máy được sửa lại. Tốc độ mặc định là 120 WPM; sau mỗi mốc ngẫu nhiên 180–300 ký tự, công cụ nghỉ 5 giây, mở lịch sử phiên bản trong 5 giây, nghỉ thêm 5 giây rồi tiếp tục gõ.
 
 ## Biên dịch
