@@ -676,41 +676,16 @@ func applyPendingCorrections() {
         replaceAllInGoogleDocs(wrong: correction.wrong, correct: correction.correct)
     }
     pendingCorrections.removeAll()
+    // Find & replace returns the caret to a match. At a typing pause, the
+    // document ends at the current insertion point, so Command+End restores
+    // the place where automatic typing must resume.
+    if !stopRequested {
+        postShortcut(code: 119, flags: .maskCommand) // Command+End
+        pumpEvents(for: config.findReplaceStepSeconds)
+    }
 }
 
-func intentionallyMistypeWords(_ text: String, rng: inout RNG,
-                                corrections: inout [(wrong: String, correct: String)]) -> String {
-    var result = ""
-    var word = ""
-    func flushWord() {
-        guard !word.isEmpty else { return }
-        var wrong = word
-        if config.errorRate > 0 && typosThisHistoryCycle < targetTyposThisHistoryCycle && charactersSinceTypo >= rng.int(config.typoMinCharacters...config.typoMaxCharacters) {
-            let chars = Array(word)
-            if let index = chars.indices.randomElement(using: &rng), let replacement = typo(for: chars[index], rng: &rng) {
-                var changed = chars
-                changed[index] = replacement
-                wrong = String(changed)
-                corrections.append((wrong: wrong, correct: word))
-                typosThisHistoryCycle += 1
-                charactersSinceTypo = 0
-            }
-        }
-        charactersSinceTypo += word.count
-        result += wrong
-        word = ""
-    }
-    for character in text {
-        if character.isWhitespace { flushWord(); result.append(character) }
-        else { word.append(character) }
-    }
-    flushWord()
-    return result
-}
-
-let typeString: (String) -> Void = { text in
-  let textWithTypos = intentionallyMistypeWords(text, rng: &rng, corrections: &pendingCorrections)
-  for character in textWithTypos {
+func typeCharacter(_ character: Character) {
     if stopRequested { return }
 
     if untilBurstChange == 0 {
@@ -746,7 +721,42 @@ let typeString: (String) -> Void = { text in
         targetTyposThisHistoryCycle = rng.int(config.typosMinPerHistory...config.typosMaxPerHistory)
         charactersSinceTypo = 0
     }
-  }
+}
+
+func typeWord(_ word: String) {
+    guard !word.isEmpty else { return }
+    var displayed = word
+    var correction: (wrong: String, correct: String)?
+    if config.errorRate > 0 && typosThisHistoryCycle < targetTyposThisHistoryCycle &&
+       charactersSinceTypo >= rng.int(config.typoMinCharacters...config.typoMaxCharacters) {
+        let chars = Array(word)
+        if let index = chars.indices.randomElement(using: &rng), let replacement = typo(for: chars[index], rng: &rng) {
+            var changed = chars
+            changed[index] = replacement
+            displayed = String(changed)
+            correction = (wrong: displayed, correct: word)
+            typosThisHistoryCycle += 1
+            charactersSinceTypo = 0
+        }
+    }
+    for character in displayed { typeCharacter(character) }
+    charactersSinceTypo += word.count
+    // Only record the correction once its wrong word has been fully typed.
+    if let correction { pendingCorrections.append(correction) }
+}
+
+func typeString(_ text: String) {
+    var word = ""
+    for character in text {
+        if character.isWhitespace {
+            typeWord(word)
+            word = ""
+            typeCharacter(character)
+        } else {
+            word.append(character)
+        }
+    }
+    typeWord(word)
 }
 
 documentLoop: for part in documentParts {
