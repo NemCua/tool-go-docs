@@ -27,7 +27,7 @@ Nếu không truyền tên, thư mục phải chứa đúng một file `.txt`.
 
 ## Cấu hình
 
-Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ngược, lỗi gõ và chu kỳ lịch sử. `typoMinCharacters`/`typoMaxCharacters` là khoảng ký tự giữa các lỗi; `typosMinPerHistory`/`typosMaxPerHistory` là số cụm sai ngẫu nhiên trước mỗi lần lưu. `autoCorrectTypos` hiện mặc định là `false`, nên chương trình không mở hộp “Tìm và thay thế” hoặc tự sửa lỗi.
+Chỉnh [settings.json](settings.json) để thay đổi tốc độ, đếm ngược, lỗi gõ và chu kỳ lịch sử. `typoMinCharacters`/`typoMaxCharacters` là khoảng ký tự giữa các lỗi; `typosMinPerHistory`/`typosMaxPerHistory` là số cụm sai ngẫu nhiên trước mỗi lần lưu. Mỗi lỗi được sửa ngay sau một chu kỳ lịch sử: chờ trước khi mở lịch sử, xem lịch sử, chờ sau đó, Backspace phần sai và gõ lại phần đúng. Hộp “Tìm và thay thế” vẫn tắt mặc định.
 
 Nếu hộp “Tìm và thay thế” phản hồi chậm, tăng `findReplaceOpenSeconds`, `findReplaceStepSeconds` và `findReplaceApplySeconds` trong `settings.json`.
 

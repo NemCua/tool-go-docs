@@ -750,8 +750,24 @@ func typeWord(_ word: String) {
     }
     for character in displayed { typeCharacter(character) }
     charactersSinceTypo += word.count
-    // Only record the correction once its wrong word has been fully typed.
-    if let correction { pendingCorrections.append(correction) }
+    guard let correction, !stopRequested else { return }
+
+    // Correct immediately after the deliberately wrong word: let Docs save a
+    // visible version first, then remove exactly the wrong word and retype it.
+    print("\nĐang lưu phiên bản trước khi sửa ‘\(correction.wrong)’…")
+    pumpEvents(for: config.waitBeforeHistory)
+    if !stopRequested { visitGoogleDocsVersionHistory(viewTime: config.historyViewTime) }
+    if !stopRequested { pumpEvents(for: config.waitAfterHistory) }
+    guard !stopRequested else { return }
+
+    for _ in correction.wrong {
+        postKey(code: 51) // Backspace
+        pumpEvents(for: rng.between(baseDelay * 0.55, baseDelay * 1.2))
+    }
+    for character in correction.correct {
+        postText(String(character))
+        pumpEvents(for: naturalDelay(after: character, base: baseDelay, burst: burstFactor, rng: &rng))
+    }
 }
 
 func typeString(_ text: String) {
